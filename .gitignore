@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Raw and processed datasets
+data/raw/*
+data/processed/*
+
+# Generated experiments/results
+experiments/*
+results/*
+
+# OS files
+.DS_Store
+Thumbs.db
+
