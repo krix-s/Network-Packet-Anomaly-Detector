@@ -1,3 +1,4 @@
+
 # Python
 __pycache__/
 *.py[cod]
@@ -19,4 +20,7 @@ results/*
 # OS files
 .DS_Store
 Thumbs.db
+
+#design decisions
+docs/decisions.md
 
