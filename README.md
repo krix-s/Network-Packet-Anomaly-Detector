@@ -6,7 +6,7 @@ patterns.
 
 ## Dataset
 
-NF-CSE-CIC-IDS2018
+NF-CSE-CIC-IDS2018 v2
 
 ## Project Status
 
