@@ -57,6 +57,22 @@ def _splits(y: np.ndarray, seed: int = SEED) -> tuple[np.ndarray, np.ndarray, np
     return train, validation, test
 
 
+def _fit_sample_weights(
+    strategy: str,
+    y: np.ndarray,
+    population_weights: np.ndarray,
+) -> np.ndarray:
+    """Return fit weights, optionally correcting a capped sample's class priors."""
+    if strategy == "balanced":
+        return compute_sample_weight("balanced", y)
+    if strategy == "source-prior":
+        weights = np.asarray(population_weights, dtype=np.float64)
+        if weights.shape != y.shape or not np.isfinite(weights).all() or np.any(weights <= 0):
+            raise ValueError("source-prior weights must be positive, finite, and match labels")
+        return weights / weights.mean()
+    raise ValueError("training_weighting must be 'balanced' or 'source-prior'")
+
+
 def _metrics(
     task: str,
     y_true: np.ndarray,
@@ -126,6 +142,7 @@ def run_experiment(
     seed: int = SEED,
     log_rates: bool = False,
     include_ports: bool = False,
+    training_weighting: str = "balanced",
 ) -> dict[str, Any]:
     if task not in {"binary", "multiclass"}:
         raise ValueError("task must be 'binary' or 'multiclass'")
@@ -183,9 +200,12 @@ def run_experiment(
         "hist_gradient_boosting": stronger,
     }
     validation_scores = {}
+    validation_metrics = {}
     fit_seconds = {}
     for name, estimator in candidates.items():
-        train_weights = compute_sample_weight("balanced", y[train])
+        train_weights = _fit_sample_weights(
+            training_weighting, y[train], weights[train]
+        )
         started = perf_counter()
         if name == "logistic_regression":
             estimator.fit(x[train], y[train], logisticregression__sample_weight=train_weights)
@@ -206,11 +226,21 @@ def run_experiment(
                 sample_weight=weights[validation], zero_division=0,
             )
         validation_scores[name] = float(score)
+        validation_metrics[name] = _metrics(
+            task,
+            y[validation],
+            pred,
+            estimator.predict_proba(x[validation]),
+            classes,
+            weights[validation],
+        )
 
     selected_name = max(validation_scores, key=validation_scores.get)
     selected = candidates[selected_name]
     fit_indices = np.concatenate((train, validation))
-    fit_weights = compute_sample_weight("balanced", y[fit_indices])
+    fit_weights = _fit_sample_weights(
+        training_weighting, y[fit_indices], weights[fit_indices]
+    )
     refit_started = perf_counter()
     if selected_name == "logistic_regression":
         selected.fit(x[fit_indices], y[fit_indices], logisticregression__sample_weight=fit_weights)
@@ -257,15 +287,17 @@ def run_experiment(
         "features": predictors,
         "excluded_features": list(excluded),
         "include_ports": include_ports,
+        "training_weighting": training_weighting,
         "log1p_features": list(EXTREME_RATE_FEATURES if log_rates else ()),
         "validation_only": validation_only,
         "selection_metric": "attack_f1_population_weighted" if task == "binary" else "macro_f1_population_weighted",
         "model_configurations": {
             "majority_class": {"strategy": "most_frequent"},
-            "logistic_regression": {"max_iter": 1000, "tol": 1e-3, "scaler": "StandardScaler", "training_weights": "balanced"},
-            "hist_gradient_boosting": {"max_iter": 100, "max_leaf_nodes": 31, "learning_rate": 0.1, "l2_regularization": 1.0, "training_weights": "balanced"},
+            "logistic_regression": {"max_iter": 1000, "tol": 1e-3, "scaler": "StandardScaler", "training_weights": training_weighting},
+            "hist_gradient_boosting": {"max_iter": 100, "max_leaf_nodes": 31, "learning_rate": 0.1, "l2_regularization": 1.0, "training_weights": training_weighting},
         },
         "validation_scores": validation_scores,
+        "validation_metrics": validation_metrics,
         "fit_seconds": fit_seconds,
         "refit_seconds": refit_seconds,
         "selected_model": selected_name,

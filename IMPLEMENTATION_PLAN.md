@@ -29,8 +29,10 @@
 - [x] Document actual sample-based metrics, limitations, model settings, and inference commands.
 - [x] Test a monotonic `log1p` transform for the extreme rate fields; the validation score was unchanged.
 - [x] Compare a validation-only with-ports variant; its HGB score was nearly unchanged.
-- [ ] Perform final verification and push the results/documentation update.
+- [x] Compare multiclass balanced and source-prior training weights on the same validation split, then evaluate the validation-selected source-prior model on the held-out sample.
+- [x] Record multiclass per-class validation diagnostics, held-out metrics, presentation brief, and weighting caveats.
+- [x] Perform final verification and push the results/documentation update.
 
-Current seed-43 sample results and validation-only feature ablations are reported in `README.md` and `reports/experiments/`; generated models are ignored by Git.
+Current seed-43 sample results and validation-only feature ablations are reported in `README.md` and `reports/experiments/`; generated models are ignored by Git. Multiclass has both balanced and source-prior reports; the latter was selected using validation macro-F1 and reaches 0.7887 source-weighted test macro-F1, while missing all 65 sampled SQL Injection test examples.
 
 The supplied paper describes a 2D CNN but does not specify the tabular-to-tensor mapping. This implementation does not claim to reproduce it; a CNN would require a justified input representation and a significant deep-learning dependency that is not installed in the current environment.

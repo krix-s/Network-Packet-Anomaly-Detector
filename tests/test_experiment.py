@@ -6,11 +6,26 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from nids.experiment import _splits, run_experiment
+from nids.experiment import _fit_sample_weights, _splits, run_experiment
 from nids.inference import load_artifact, predict_record
 
 
 class EndToEndExperimentTests(unittest.TestCase):
+    def test_source_prior_weights_restore_population_proportions(self):
+        y = np.array(["common", "common", "rare", "rare"])
+        # The capped sample is balanced, while the source population is 9:1.
+        population_weights = np.array([9.0, 9.0, 1.0, 1.0])
+        weights = _fit_sample_weights("source-prior", y, population_weights)
+        self.assertAlmostEqual(weights[:2].sum() / weights.sum(), 0.9)
+        self.assertAlmostEqual(weights.mean(), 1.0)
+
+    def test_source_prior_weights_validate_shape_and_strategy(self):
+        y = np.array([0, 1])
+        with self.assertRaisesRegex(ValueError, "match labels"):
+            _fit_sample_weights("source-prior", y, np.array([1.0]))
+        with self.assertRaisesRegex(ValueError, "training_weighting"):
+            _fit_sample_weights("unknown", y, np.ones(2))
+
     def test_stratified_split_is_reproducible_disjoint_and_70_15_15(self):
         y = np.repeat([0, 1], 100)
         first = _splits(y)

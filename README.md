@@ -6,7 +6,7 @@ An undergraduate project to detect malicious network flows with the NF-CSE-CIC-I
 
 Repository audit, bounded-memory dataset validation, sampled training, held-out evaluation, and local inference are implemented. The measured sample-based results are summarized below; they are not full-data training results. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [docs/data-audit.md](docs/data-audit.md), [docs/research_basis.md](docs/research_basis.md), and [docs/architecture.md](docs/architecture.md).
 
-The binary classification results and validation experiments are ready to present: [binary experiment brief](reports/experiments/binary_presentation_brief.md). Multiclass work is a separate follow-on.
+The binary classification results and validation experiments are summarized in the [binary experiment brief](reports/experiments/binary_presentation_brief.md). The multiclass follow-up comparing balanced and source-prior training is documented in the [multiclass experiment brief](reports/experiments/multiclass_presentation_brief.md).
 
 ## Dataset setup
 
@@ -33,10 +33,11 @@ Train either task independently, or both in sequence:
 ```bash
 PYTHONPATH=src python scripts/train.py --task binary --seed 43
 PYTHONPATH=src python scripts/train.py --task multiclass --seed 43
+PYTHONPATH=src python scripts/train.py --task multiclass --training-weighting source-prior --seed 43
 # or --task all
 ```
 
-The trainer scans the Parquet file in Arrow batches and keeps at most 125,000 benign plus 17,000 attack samples for binary classification. Multiclass sampling keeps at most 12,000 rows per category and retains every smaller class in full. Each sample is split into 70% train, 15% validation, and 15% test with a fixed seed. The validation set selects between majority-class, logistic-regression, and histogram-gradient-boosting models. Class-balanced sample weights are applied only during model fitting; source class counts reweight metrics to reflect the source prevalence. The test partition is evaluated once after selection.
+The trainer scans the Parquet file in Arrow batches and keeps at most 125,000 benign plus 17,000 attack samples for binary classification. Multiclass sampling keeps at most 12,000 rows per category and retains every smaller class in full. Each sample is split into 70% train, 15% validation, and 15% test with a fixed seed. The validation set selects between majority-class, logistic-regression, and histogram-gradient-boosting models. Training defaults to class-balanced weights. For multiclass, `--training-weighting source-prior` uses source counts to correct the capped per-class sample toward the local dataset class proportions. Source class counts reweight evaluation metrics as well. The test partition is evaluated after validation-based selection.
 
 Models are written to ignored local files under `models/`. Metric JSON files are written to `reports/experiments/`. Reproduce the validation-only duration ablation with `PYTHONPATH=src python scripts/train.py --task binary --drop-duration --validation-only --run-suffix without_duration --seed 43`; it intentionally does not inspect test metrics. A separate `--log-rates --validation-only --run-suffix rates_log1p` run includes the extreme directional rate columns after a fixed `log1p` transform and writes its own validation report.
 
@@ -46,14 +47,14 @@ Provide one JSON object containing every feature named in the saved model artifa
 
 ```bash
 PYTHONPATH=src python scripts/predict.py --model models/binary_model.joblib --input flow.json
-PYTHONPATH=src python scripts/predict.py --model models/multiclass_model.joblib --input flow.json
+PYTHONPATH=src python scripts/predict.py --model models/multiclass_source_prior_model.joblib --input flow.json
 ```
 
 The saved artifact fixes the feature order and includes the fitted estimator. Binary `Label` and multiclass `Attack` predictions use separate artifacts.
 
 ## Current sampled experiment (seed 43)
 
-These runs use 142,000 binary and 135,126 multiclass sampled rows, and stratified 70/15/15 train/validation/test partitions. The training sample is not the entire dataset. Validation selection scores and the final selected model's test metrics are source-frequency weighted to correct the capped class sampling. The supplied CNN paper uses KDD Cup 99 and NSL-KDD, and does not specify how to arrange tabular features for its CNN; this project has not claimed to reproduce that CNN.
+These runs use 142,000 binary and 135,126 multiclass sampled rows, and stratified 70/15/15 train/validation/test partitions. The training sample is not the entire dataset. Binary models use class-balanced training weights. Multiclass training compared balanced weights with source-prior weights; the latter correct the capped sample toward the local source class proportions. Validation and test metrics are source-frequency weighted. The supplied CNN paper uses KDD Cup 99 and NSL-KDD, and does not specify how to arrange tabular features for its CNN; this project has not claimed to reproduce that CNN.
 
 | Task | Validation F1: majority / logistic / HGB | Selected model | Test accuracy | Test F1 | Test precision / recall | ROC-AUC / PR-AUC / FPR |
 |---|---|---|---:|---:|---:|---|
@@ -61,11 +62,11 @@ These runs use 142,000 binary and 135,126 multiclass sampled rows, and stratifie
 
 | Task | Validation macro-F1: majority / logistic / HGB | Selected model | Test accuracy | Test macro-F1 | Test weighted-F1 |
 |---|---|---|---:|---:|---:|
-| Multiclass `Attack` | 0.0625 / 0.5680 / 0.6907 | HistGradientBoosting | 0.5737 | 0.6915 | 0.7180 |
+| Multiclass `Attack` | 0.0625 / 0.6118 / 0.7586 | HistGradientBoosting (source-prior weights) | 0.9942 | 0.7887 | 0.9932 |
 
 The binary test confusion matrix contains 18,739 true benign, 11 false positives, 93 missed attacks, and 2,457 detected attacks (sample counts). Source-weighted FPR is 0.00059. This illustrates the trade-off: fewer false alarms come at the cost of some missed attacks; the operating threshold has not been tuned for a deployment setting.
 
-The multiclass report is weak for several rare categories. SQL Injection has only 65 test examples (out of 432 total); weighted precision/recall/F1 are 0.00155 / 0.5846 / 0.00309. Brute Force -Web: 0.00358 / 0.3271 / 0.00709; Brute Force -XSS: 0.00195 / 0.3525 / 0.00387; Infilteration: 0.0150 / 0.8928 / 0.0296. High recalls paired with very low precision show substantial false alarms into these categories. Treat their estimates as uncertain. Full per-class results and confusion matrices are in `reports/experiments/multiclass_metrics.json`.
+The initial balanced multiclass run produced excessive false positives for several rare categories. A validation-selected source-prior training experiment improved source-weighted test macro-F1 from 0.6915 to 0.7887 and test accuracy from 0.5737 to 0.9942 on the same sampled split. It substantially improved precision for Brute Force -Web, Brute Force -XSS, and Infilteration, while reducing recall; it missed all 65 sampled SQL Injection test examples. These rare-category estimates are uncertain. The initial balanced model remains available in `multiclass_metrics.json`; the new model and per-class results are in `multiclass_source_prior_metrics.json`. See the [multiclass experiment brief](reports/experiments/multiclass_presentation_brief.md) for comparison and caveats.
 
 The validation-only binary duration ablation selected the same HistGradientBoosting model and produced the same attack F1 (0.976589) with `FLOW_DURATION_MILLISECONDS` excluded. This indicates no score change at that operating point on this sample; it does not prove the duration field is free of dataset artifacts. The ablation did not evaluate the test partition. Full details are in `reports/experiments/binary_without_duration_metrics.json`.
 

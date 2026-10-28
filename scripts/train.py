@@ -29,6 +29,9 @@ def main() -> None:
                         help="Include both extreme directional rate fields after log1p")
     parser.add_argument("--include-ports", action="store_true",
                         help="Keep source/destination ports in the predictor set")
+    parser.add_argument("--training-weighting", choices=("balanced", "source-prior"),
+                        default="balanced",
+                        help="Use class-balanced weights or restore source class proportions")
     args = parser.parse_args()
 
     tasks = ("binary", "multiclass") if args.task == "all" else (args.task,)
@@ -46,6 +49,7 @@ def main() -> None:
             seed=args.seed,
             log_rates=args.log_rates,
             include_ports=args.include_ports,
+            training_weighting=args.training_weighting,
         )
         print(json.dumps(summary, indent=2))
 
