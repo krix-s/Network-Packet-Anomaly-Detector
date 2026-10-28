@@ -50,6 +50,15 @@
     .metric-label { color: var(--muted); font-size: 12px; font-weight: 650; }
     .metric-value { font-size: 25px; font-weight: 780; letter-spacing: -.04em; margin-top: 2px; }
     .metric-note { color: #7a879b; font-size: 11px; margin-top: 2px; }
+    .comparison { margin: 0 0 32px; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 19px; }
+    .comparison-scroll { overflow-x: auto; margin-top: 12px; }
+    .comparison table { width: 100%; border-collapse: collapse; min-width: 570px; font-size: 13px; text-align: left; }
+    .comparison th, .comparison td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    .comparison th { color: var(--muted); font-size: 11px; font-weight: 750; }
+    .comparison td:not(:first-child), .comparison th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+    .comparison tr:last-child td { border-bottom: 0; }
+    .comparison .picked { color: var(--blue-dark); font-weight: 800; }
+    .comparison-note { color: var(--muted); font-size: 12px; margin: 12px 0 0; }
     .section-head { display: flex; justify-content: space-between; gap: 18px; align-items: end; margin: 0 0 13px; }
     h2 { font-size: 23px; letter-spacing: -.035em; margin: 0 0 3px; }
     .sub { color: var(--muted); font-size: 14px; margin: 0; }
@@ -154,6 +163,23 @@
       <div class="metric"><div class="metric-label">Attack precision</div><div class="metric-value" id="m-precision">—</div><div class="metric-note">When flagged, how often it was an attack</div></div>
       <div class="metric"><div class="metric-label">Attack recall</div><div class="metric-value" id="m-recall">—</div><div class="metric-note">Share of attacks found in the test sample</div></div>
       <div class="metric"><div class="metric-label">Multiclass macro-F1</div><div class="metric-value" id="m-macro">—</div><div class="metric-note">Average across 15 attack categories</div></div>
+    </section>
+
+    <section class="comparison" aria-labelledby="comparison-heading">
+      <div class="section-head">
+        <div><h2 id="comparison-heading">Models compared</h2><p class="sub">Validation scores used to choose the final model. Higher F1 means a better balance between finding attacks and avoiding false alarms.</p></div>
+      </div>
+      <div class="comparison-scroll">
+        <table>
+          <thead><tr><th>Task and score</th><th>Majority baseline</th><th>Logistic regression</th><th>Histogram gradient boosting</th></tr></thead>
+          <tbody>
+            <tr><td>Binary · attack F1</td><td>0.000</td><td>0.853</td><td class="picked">0.977 ✓</td></tr>
+            <tr><td>Multiclass · macro-F1, balanced weights</td><td>0.062</td><td>0.568</td><td class="picked">0.691 ✓</td></tr>
+            <tr><td>Multiclass · macro-F1, source-prior weights</td><td>0.062</td><td>0.612</td><td class="picked">0.759 ✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="comparison-note"><strong>In plain language:</strong> the baseline always picks the most common answer; logistic regression learns a simple weighted pattern; gradient boosting combines many small decision trees. We selected gradient boosting for both tasks. The multiclass rows compare two ways of accounting for the dataset’s uneven class frequencies.</p>
     </section>
 
     <section aria-labelledby="demo-heading">
