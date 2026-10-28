@@ -1,96 +1,34 @@
-# Flow-Based Network Intrusion Detection
+# Network Traffic Anomaly Detector
 
-An undergraduate project to detect malicious network flows with the NF-CSE-CIC-IDS2018 V2 dataset. The system predicts from flow records; it does not inspect raw packets or capture live traffic.
+A flow-based machine-learning project using the local NF-CSE-CIC-IDS2018-V2 dataset. It predicts from connection summaries; it does not read message contents or monitor a live network.
 
-## Status
+## Try the demonstration
 
-Repository audit, bounded-memory dataset validation, sampled training, held-out evaluation, and local inference are implemented. The measured sample-based results are summarized below; they are not full-data training results. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [docs/data-audit.md](docs/data-audit.md), [docs/research_basis.md](docs/research_basis.md), and [docs/architecture.md](docs/architecture.md).
+The browser demo contains four recorded examples and shows both the benign-or-attack screening result and the predicted attack category.
 
-The binary classification results and validation experiments are summarized in the [binary experiment brief](reports/experiments/binary_presentation_brief.md). The multiclass follow-up comparing balanced and source-prior training is documented in the [multiclass experiment brief](reports/experiments/multiclass_presentation_brief.md).
+**Hosted demo:** [Open FlowWatch](https://krix-s.github.io/Network-Packet-Anomaly-Detector/)
 
-For a step-by-step guide to running the app, reproducing both experiments, making a prediction, and understanding the metrics, see the [project owner walkthrough](docs/owner_walkthrough.md).
-
-For a nontechnical, interactive presentation, use the [FlowWatch demo](docs/demo_guide.md). The local version is:
+To run the same static demo from a local checkout, use Python 3:
 
 ```bash
-python3 scripts/demo_server.py
+python3 -m http.server 8000 --directory web
 ```
 
-Then open http://127.0.0.1:8000. The page uses precomputed examples from the local dataset; it does not capture live traffic. The hosted version is intended for lab access at https://krix-s.github.io/Network-Packet-Anomaly-Detector/ after GitHub Pages is enabled in repository settings. See [deployment notes](docs/deployment.md) for the one-time setup.
+Then open <http://127.0.0.1:8000>. If that port is already in use, open the existing demo or change `8000` to `8001` in both places.
 
-## Dataset setup
+GitHub Pages must be set to **GitHub Actions** as its publishing source for the hosted link to work. The workflow publishes only the demo page and its precomputed results.
 
-Place the dataset at `data/raw/NF-CSE-CIC-IDS2018-V2.parquet`. The feature dictionary can be placed beside it as `data/raw/NetFlow v2 Features.csv`. Neither file should be committed. The current local dataset has 17,129,715 rows and 43 columns.
+## What was evaluated
 
-## Environment and data audit
+The local dataset contains 17.1 million flow records and 43 columns: 41 numeric features plus binary `Label` and multiclass `Attack` targets. The models were trained and evaluated on bounded, stratified samples, not on all rows.
 
-Create a Python 3.11+ environment and install the project's minimal runtime dependencies:
+| Task | Validation selection | Held-out sample result |
+|---|---|---|
+| Benign vs attack | Compared a majority baseline, logistic regression, and histogram gradient boosting; selected by attack F1 | Attack F1 **0.9792**, precision 0.9955, recall 0.9635 |
+| 15-category prediction | Compared balanced and source-prior training weights; selected by macro-F1 | Macro-F1 **0.7887**, accuracy 0.9942 |
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements-project.txt
-PYTHONPATH=src python scripts/audit_data.py
-PYTHONPATH=src python -m unittest discover -s tests -v
-```
+The test metrics use source-frequency weights to adjust for capped sampling. The multiclass accuracy is driven by the dataset's highly uneven class frequencies. The model missed all 65 sampled SQL Injection test examples; the demo includes a misclassified example to make this limitation visible.
 
-The audit iterates through Arrow batches; it does not load the complete dataset into a pandas DataFrame. The notebook files are exploratory material, not the reproducible training interface.
+## Important limits
 
-## Training
-
-Train either task independently, or both in sequence:
-
-```bash
-PYTHONPATH=src python scripts/train.py --task binary --seed 43
-PYTHONPATH=src python scripts/train.py --task multiclass --seed 43
-PYTHONPATH=src python scripts/train.py --task multiclass --training-weighting source-prior --seed 43
-# or --task all
-```
-
-The trainer scans the Parquet file in Arrow batches and keeps at most 125,000 benign plus 17,000 attack samples for binary classification. Multiclass sampling keeps at most 12,000 rows per category and retains every smaller class in full. Each sample is split into 70% train, 15% validation, and 15% test with a fixed seed. The validation set selects between majority-class, logistic-regression, and histogram-gradient-boosting models. Training defaults to class-balanced weights. For multiclass, `--training-weighting source-prior` uses source counts to correct the capped per-class sample toward the local dataset class proportions. Source class counts reweight evaluation metrics as well. The test partition is evaluated after validation-based selection.
-
-Models are written to ignored local files under `models/`. Metric JSON files are written to `reports/experiments/`. Reproduce the validation-only duration ablation with `PYTHONPATH=src python scripts/train.py --task binary --drop-duration --validation-only --run-suffix without_duration --seed 43`; it intentionally does not inspect test metrics. A separate `--log-rates --validation-only --run-suffix rates_log1p` run includes the extreme directional rate columns after a fixed `log1p` transform and writes its own validation report.
-
-## Inference
-
-Provide one JSON object containing every feature named in the saved model artifact. The tool checks required names, numeric types, finiteness, and float32 representability, then returns the task, predicted label, per-class probabilities, and maximum probability:
-
-```bash
-PYTHONPATH=src python scripts/predict.py --model models/binary_model.joblib --input flow.json
-PYTHONPATH=src python scripts/predict.py --model models/multiclass_source_prior_model.joblib --input flow.json
-```
-
-The saved artifact fixes the feature order and includes the fitted estimator. Binary `Label` and multiclass `Attack` predictions use separate artifacts.
-
-## Current sampled experiment (seed 43)
-
-These runs use 142,000 binary and 135,126 multiclass sampled rows, and stratified 70/15/15 train/validation/test partitions. The training sample is not the entire dataset. Binary models use class-balanced training weights. Multiclass training compared balanced weights with source-prior weights; the latter correct the capped sample toward the local source class proportions. Validation and test metrics are source-frequency weighted. The supplied CNN paper uses KDD Cup 99 and NSL-KDD, and does not specify how to arrange tabular features for its CNN; this project has not claimed to reproduce that CNN.
-
-| Task | Validation F1: majority / logistic / HGB | Selected model | Test accuracy | Test F1 | Test precision / recall | ROC-AUC / PR-AUC / FPR |
-|---|---|---|---:|---:|---:|---|
-| Binary `Label` | attack F1: 0.0000 / 0.8529 / 0.9766 | HistGradientBoosting | 0.9952 | attack F1 0.9792 | 0.9955 / 0.9635 | 0.9893 / 0.9776 / 0.00059 |
-
-| Task | Validation macro-F1: majority / logistic / HGB | Selected model | Test accuracy | Test macro-F1 | Test weighted-F1 |
-|---|---|---|---:|---:|---:|
-| Multiclass `Attack` | 0.0625 / 0.6118 / 0.7586 | HistGradientBoosting (source-prior weights) | 0.9942 | 0.7887 | 0.9932 |
-
-The binary test confusion matrix contains 18,739 true benign, 11 false positives, 93 missed attacks, and 2,457 detected attacks (sample counts). Source-weighted FPR is 0.00059. This illustrates the trade-off: fewer false alarms come at the cost of some missed attacks; the operating threshold has not been tuned for a deployment setting.
-
-The initial balanced multiclass run produced excessive false positives for several rare categories. A validation-selected source-prior training experiment improved source-weighted test macro-F1 from 0.6915 to 0.7887 and test accuracy from 0.5737 to 0.9942 on the same sampled split. It substantially improved precision for Brute Force -Web, Brute Force -XSS, and Infilteration, while reducing recall; it missed all 65 sampled SQL Injection test examples. These rare-category estimates are uncertain. The initial balanced model remains available in `multiclass_metrics.json`; the new model and per-class results are in `multiclass_source_prior_metrics.json`. See the [multiclass experiment brief](reports/experiments/multiclass_presentation_brief.md) for comparison and caveats.
-
-The validation-only binary duration ablation selected the same HistGradientBoosting model and produced the same attack F1 (0.976589) with `FLOW_DURATION_MILLISECONDS` excluded. This indicates no score change at that operating point on this sample; it does not prove the duration field is free of dataset artifacts. The ablation did not evaluate the test partition. Full details are in `reports/experiments/binary_without_duration_metrics.json`.
-
-The validation-only log1p rate-field experiment also selected HistGradientBoosting with attack F1 0.976589, unchanged from the baseline. This shows the fields can be represented and used by the pipeline without changing this validation score; it does not establish that their formulas are trustworthy or improve generalization. No test metrics were computed for this variant. See `reports/experiments/binary_rates_log1p_metrics.json`.
-
-The initial seed-42 run included source/destination ports; it is retained in Git history only. In the seed-43 validation-only port ablation, HGB attack F1 was 0.97638 with ports versus 0.97659 without; logistic F1 was 0.86245 versus 0.85292. The small HGB difference does not justify accepting possible endpoint-specific leakage, so the final artifacts continue to omit ports. The comparison did not evaluate test metrics; see `reports/experiments/binary_with_ports_metrics.json`. The two rate fields are excluded from the current final models because their magnitudes exceed float32 range and their exact formulas remain unverified; the log1p variant is a separate validation-only experiment.
-
-## Pipeline decisions
-
-1. Binary flow classification using `Label` (0 benign, 1 attack).
-2. Separate multiclass flow classification using `Attack`, retaining all 15 categories and reporting support for rare categories.
-
-The feature selector excludes both target columns from predictors in either experiment. The current feature policy omits the all-zero `FTP_COMMAND_RET_CODE`, source/destination ports as a conservative leakage-control choice, and the two extreme-magnitude directional bytes-per-second fields from the final models. A validation-only log1p experiment is available for those rate fields. Preprocessing is fit on training data only, and test data is reserved for final evaluation.
-
-## Limitations
-
-This dataset audit does not establish generalization to other networks, time periods, or collection environments. The supplied CNN paper used different benchmarks from the local 43-column table. The smallest local category has 432 observations, limiting the certainty of rare-class metrics. Exact-duplicate and capture-level leakage checks remain incomplete. Results must be described as sample-based dataset evaluation rather than a claim of reliable real-world detection.
+This is an educational demonstration, not a live intrusion prevention system. The examples and predictions are precomputed. Results do not establish performance on another network, and rare attack categories remain difficult. The public presentation build does not include the raw dataset or trained model files.

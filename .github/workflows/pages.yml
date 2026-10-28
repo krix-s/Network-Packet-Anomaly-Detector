@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "README.md"
       - "web/index.html"
       - "web/demo_bundle.json"
       - ".github/workflows/pages.yml"
