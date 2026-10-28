@@ -3,7 +3,7 @@
 ## Audit findings (2026-10-28)
 
 - The repository contains exploration notebooks only; there is no reusable training, evaluation, or inference package yet.
-- `data/raw/NF-CSE-CIC-IDS2018-V2.parquet` (about 642 MB) and its feature dictionary are present and ignored by Git. The notebook reports 17,129,715 rows and 43 columns, but these figures and its data-quality conclusions have not yet been independently reproduced.
+- `data/raw/NF-CSE-CIC-IDS2018-V2.parquet` (about 642 MB) and its feature dictionary are present and ignored by Git. A bounded Arrow scan independently verified 17,129,715 rows and 43 columns.
 - The tracked exploration notebook has uncommitted edits. Preserve it; the untracked `Untitled.ipynb` and `jupyter_server_config.py` are also preserved.
 - `requirements.txt` is a full pinned Jupyter environment rather than a minimal project dependency declaration. Existing split code in the notebook is in-memory and has not created persisted splits.
 - Existing notebook feature exclusions (`SRC_TO_DST_SECOND_BYTES`, `DST_TO_SRC_SECOND_BYTES`, `FTP_COMMAND_RET_CODE`) are provisional; decide through measured diagnostics and train-only experimentation.
@@ -25,9 +25,11 @@
 - [x] Add validated CLI inference and small-fixture end-to-end tests.
 - [x] Re-run current trainer version to collect majority baseline and runtime measurements.
 - [x] Run a validation-only duration ablation; its binary F1 was unchanged.
-- [x] Read the associated NetFlow v2 paper and document its methodology and differences from the local files.
+- [x] Read the user-supplied CNN paper and document its methodology and differences from the local 43-column dataset.
 - [x] Document actual sample-based metrics, limitations, model settings, and inference commands.
-- [ ] Test a monotonic transform for the extreme rate fields; their formulas remain unverified.
+- [x] Test a monotonic `log1p` transform for the extreme rate fields; the validation score was unchanged.
 - [ ] Perform final verification and push the results/documentation update.
 
-The first sampled train/test run completed. Its results and limitations are reported in `README.md`; generated models are ignored by Git.
+Current seed-43 sample results and validation-only feature ablations are reported in `README.md` and `reports/experiments/`; generated models are ignored by Git.
+
+The supplied paper describes a 2D CNN but does not specify the tabular-to-tensor mapping. This implementation does not claim to reproduce it; a CNN would require a justified input representation and a significant deep-learning dependency that is not installed in the current environment.

@@ -27,7 +27,13 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_sample_weight
 
-from .config import BINARY_TARGET, DEFAULT_DATA_PATH, INITIAL_EXCLUDED_FEATURES, MULTICLASS_TARGET
+from .config import (
+    BINARY_TARGET,
+    DEFAULT_DATA_PATH,
+    EXTREME_RATE_FEATURES,
+    INITIAL_EXCLUDED_FEATURES,
+    MULTICLASS_TARGET,
+)
 from .data import parquet_metadata
 from .features import feature_columns
 from .sampling import sample_parquet
@@ -117,12 +123,16 @@ def run_experiment(
     validation_only: bool = False,
     run_suffix: str = "",
     seed: int = SEED,
+    log_rates: bool = False,
 ) -> dict[str, Any]:
     if task not in {"binary", "multiclass"}:
         raise ValueError("task must be 'binary' or 'multiclass'")
     target = BINARY_TARGET if task == "binary" else MULTICLASS_TARGET
     metadata = parquet_metadata(data_path)
-    excluded = INITIAL_EXCLUDED_FEATURES + (
+    excluded = tuple(
+        name for name in INITIAL_EXCLUDED_FEATURES
+        if not (log_rates and name in EXTREME_RATE_FEATURES)
+    ) + (
         ("FLOW_DURATION_MILLISECONDS",) if drop_duration else ()
     )
     predictors = feature_columns(metadata["columns"], target=target, excluded=excluded)
@@ -141,6 +151,7 @@ def run_experiment(
         default_cap=default_cap,
         seed=seed,
         batch_size=batch_size,
+        log1p_columns=EXTREME_RATE_FEATURES if log_rates else (),
     )
     sampling_seconds = perf_counter() - sample_started
     classes, sample_counts = np.unique(y, return_counts=True)
@@ -223,6 +234,7 @@ def run_experiment(
         "task": task,
         "target": target,
         "features": predictors,
+        "log1p_features": list(EXTREME_RATE_FEATURES if log_rates else ()),
         "classes": classes.tolist(),
         "model_name": selected_name,
         "model": selected,
@@ -241,6 +253,7 @@ def run_experiment(
         "split_rows": {"train": int(len(train)), "validation": int(len(validation)), "test": int(len(test))},
         "features": predictors,
         "excluded_features": list(excluded),
+        "log1p_features": list(EXTREME_RATE_FEATURES if log_rates else ()),
         "validation_only": validation_only,
         "selection_metric": "attack_f1_population_weighted" if task == "binary" else "macro_f1_population_weighted",
         "model_configurations": {

@@ -53,6 +53,23 @@ class InferenceValidationTests(unittest.TestCase):
         predict_record(artifact, {"first": 1.0, "second": 2.0})
         np.testing.assert_array_equal(model.seen, [[2.0, 1.0]])
 
+    def test_log1p_artifact_preprocessing_accepts_extreme_finite_value(self):
+        class CapturingModel:
+            classes_ = np.asarray([0, 1])
+
+            def predict(self, x):
+                self.seen = x.copy()
+                return np.asarray([1])
+
+            def predict_proba(self, x):
+                return np.asarray([[0.1, 0.9]])
+
+        model = CapturingModel()
+        artifact = {**self.artifact, "features": ["rate"], "log1p_features": ["rate"], "model": model}
+        predict_record(artifact, {"rate": 6.58802154063901e304})
+        self.assertTrue(np.isfinite(model.seen[0, 0]))
+        self.assertAlmostEqual(float(model.seen[0, 0]), float(np.log1p(6.58802154063901e304)), places=4)
+
 
 if __name__ == "__main__":
     unittest.main()

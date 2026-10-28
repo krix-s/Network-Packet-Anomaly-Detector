@@ -1,0 +1,105 @@
+{
+  "task": "binary",
+  "target": "Label",
+  "seed": 43,
+  "sampled_rows": 142000,
+  "sample_matrix_bytes": 21584000,
+  "source_rows_scanned": 17129715,
+  "sampling_seconds": 10.71497695700009,
+  "population_class_counts": {
+    "0": 15101685,
+    "1": 2028030
+  },
+  "sample_class_counts": {
+    "0": 125000,
+    "1": 17000
+  },
+  "split_rows": {
+    "train": 99400,
+    "validation": 21300,
+    "test": 21300
+  },
+  "features": [
+    "PROTOCOL",
+    "L7_PROTO",
+    "IN_BYTES",
+    "IN_PKTS",
+    "OUT_BYTES",
+    "OUT_PKTS",
+    "TCP_FLAGS",
+    "CLIENT_TCP_FLAGS",
+    "SERVER_TCP_FLAGS",
+    "FLOW_DURATION_MILLISECONDS",
+    "DURATION_IN",
+    "DURATION_OUT",
+    "MIN_TTL",
+    "MAX_TTL",
+    "LONGEST_FLOW_PKT",
+    "SHORTEST_FLOW_PKT",
+    "MIN_IP_PKT_LEN",
+    "MAX_IP_PKT_LEN",
+    "SRC_TO_DST_SECOND_BYTES",
+    "DST_TO_SRC_SECOND_BYTES",
+    "RETRANSMITTED_IN_BYTES",
+    "RETRANSMITTED_IN_PKTS",
+    "RETRANSMITTED_OUT_BYTES",
+    "RETRANSMITTED_OUT_PKTS",
+    "SRC_TO_DST_AVG_THROUGHPUT",
+    "DST_TO_SRC_AVG_THROUGHPUT",
+    "NUM_PKTS_UP_TO_128_BYTES",
+    "NUM_PKTS_128_TO_256_BYTES",
+    "NUM_PKTS_256_TO_512_BYTES",
+    "NUM_PKTS_512_TO_1024_BYTES",
+    "NUM_PKTS_1024_TO_1514_BYTES",
+    "TCP_WIN_MAX_IN",
+    "TCP_WIN_MAX_OUT",
+    "ICMP_TYPE",
+    "ICMP_IPV4_TYPE",
+    "DNS_QUERY_ID",
+    "DNS_QUERY_TYPE",
+    "DNS_TTL_ANSWER"
+  ],
+  "excluded_features": [
+    "FTP_COMMAND_RET_CODE",
+    "L4_SRC_PORT",
+    "L4_DST_PORT"
+  ],
+  "log1p_features": [
+    "SRC_TO_DST_SECOND_BYTES",
+    "DST_TO_SRC_SECOND_BYTES"
+  ],
+  "validation_only": true,
+  "selection_metric": "attack_f1_population_weighted",
+  "model_configurations": {
+    "majority_class": {
+      "strategy": "most_frequent"
+    },
+    "logistic_regression": {
+      "max_iter": 1000,
+      "tol": 0.001,
+      "scaler": "StandardScaler",
+      "training_weights": "balanced"
+    },
+    "hist_gradient_boosting": {
+      "max_iter": 100,
+      "max_leaf_nodes": 31,
+      "learning_rate": 0.1,
+      "l2_regularization": 1.0,
+      "training_weights": "balanced"
+    }
+  },
+  "validation_scores": {
+    "majority_class": 0.0,
+    "logistic_regression": 0.8512775393866213,
+    "hist_gradient_boosting": 0.9765891995292924
+  },
+  "fit_seconds": {
+    "majority_class": 0.011165215999881184,
+    "logistic_regression": 1.008583671999986,
+    "hist_gradient_boosting": 5.555246756000088
+  },
+  "refit_seconds": 6.362615367999979,
+  "selected_model": "hist_gradient_boosting",
+  "test_metrics": null,
+  "model_path": "models/binary_rates_log1p_model.joblib"
+}

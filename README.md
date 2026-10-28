@@ -34,9 +34,9 @@ PYTHONPATH=src python scripts/train.py --task multiclass --seed 43
 # or --task all
 ```
 
-The trainer scans the Parquet file in Arrow batches and keeps at most 125,000 benign plus 17,000 attack samples for binary classification. Multiclass sampling keeps at most 12,000 rows per category and retains every smaller class in full. Each sample is split into 70% train, 15% validation, and 15% test with seed 42. The validation set selects between majority-class, logistic-regression, and histogram-gradient-boosting models. Class-balanced sample weights are applied only during model fitting; source class counts reweight metrics to reflect the source prevalence. The test partition is evaluated once after selection.
+The trainer scans the Parquet file in Arrow batches and keeps at most 125,000 benign plus 17,000 attack samples for binary classification. Multiclass sampling keeps at most 12,000 rows per category and retains every smaller class in full. Each sample is split into 70% train, 15% validation, and 15% test with a fixed seed. The validation set selects between majority-class, logistic-regression, and histogram-gradient-boosting models. Class-balanced sample weights are applied only during model fitting; source class counts reweight metrics to reflect the source prevalence. The test partition is evaluated once after selection.
 
-Models are written to ignored local files under `models/`. Metric JSON files are written to `reports/experiments/`. Reproduce the validation-only duration ablation with `PYTHONPATH=src python scripts/train.py --task binary --drop-duration --validation-only --run-suffix without_duration --seed 43`; it intentionally does not inspect test metrics.
+Models are written to ignored local files under `models/`. Metric JSON files are written to `reports/experiments/`. Reproduce the validation-only duration ablation with `PYTHONPATH=src python scripts/train.py --task binary --drop-duration --validation-only --run-suffix without_duration --seed 43`; it intentionally does not inspect test metrics. A separate `--log-rates --validation-only --run-suffix rates_log1p` run includes the extreme directional rate columns after a fixed `log1p` transform and writes its own validation report.
 
 ## Inference
 
@@ -51,7 +51,7 @@ The saved artifact fixes the feature order and includes the fitted estimator. Bi
 
 ## Current sampled experiment (seed 43)
 
-These runs use the paper-aligned feature exclusions, 142,000 binary and 135,126 multiclass sampled rows, and stratified 70/15/15 train/validation/test partitions. The training sample is not the entire dataset. Validation selection scores and the final selected model's test metrics are source-frequency weighted to correct the capped class sampling.
+These runs use 142,000 binary and 135,126 multiclass sampled rows, and stratified 70/15/15 train/validation/test partitions. The training sample is not the entire dataset. Validation selection scores and the final selected model's test metrics are source-frequency weighted to correct the capped class sampling. The supplied CNN paper uses KDD Cup 99 and NSL-KDD, and does not specify how to arrange tabular features for its CNN; this project has not claimed to reproduce that CNN.
 
 | Task | Validation F1: majority / logistic / HGB | Selected model | Test accuracy | Test F1 | Test precision / recall | ROC-AUC / PR-AUC / FPR |
 |---|---|---|---:|---:|---:|---|
@@ -67,15 +67,17 @@ The multiclass report is weak for several rare categories. SQL Injection has onl
 
 The validation-only binary duration ablation selected the same HistGradientBoosting model and produced the same attack F1 (0.976589) with `FLOW_DURATION_MILLISECONDS` excluded. This indicates no score change at that operating point on this sample; it does not prove the duration field is free of dataset artifacts. The ablation did not evaluate the test partition. Full details are in `reports/experiments/binary_without_duration_metrics.json`.
 
-The earlier seed-42 run included source/destination ports; it is retained in Git history only. Current model artifacts exclude those ports to follow the reference paper. The two rate fields are also excluded because their magnitudes exceed float32 range and their exact formulas remain unverified; a log transform has not yet been tested.
+The validation-only log1p rate-field experiment also selected HistGradientBoosting with attack F1 0.976589, unchanged from the baseline. This shows the fields can be represented and used by the pipeline without changing this validation score; it does not establish that their formulas are trustworthy or improve generalization. No test metrics were computed for this variant. See `reports/experiments/binary_rates_log1p_metrics.json`.
+
+The initial seed-42 run included source/destination ports; it is retained in Git history only. Current model artifacts omit those ports as a conservative leakage-control choice, not because the supplied CNN paper recommends it. The two rate fields are excluded from the current final models because their magnitudes exceed float32 range and their exact formulas remain unverified; the new log1p path is a separate validation-only experiment.
 
 ## Pipeline decisions
 
 1. Binary flow classification using `Label` (0 benign, 1 attack).
 2. Separate multiclass flow classification using `Attack`, retaining all 15 categories and reporting support for rare categories.
 
-The feature selector excludes both target columns from predictors in either experiment. The model omits the all-zero `FTP_COMMAND_RET_CODE`, source/destination ports to follow the reference paper, and the two extreme-magnitude directional bytes-per-second fields, which are beyond float32 range. Those rate fields remain in the raw data; a log transform is an open follow-up. Preprocessing is fit on training data only, and test data is reserved for final evaluation.
+The feature selector excludes both target columns from predictors in either experiment. The current feature policy omits the all-zero `FTP_COMMAND_RET_CODE`, source/destination ports as a conservative leakage-control choice, and the two extreme-magnitude directional bytes-per-second fields from the final models. A validation-only log1p experiment is available for those rate fields. Preprocessing is fit on training data only, and test data is reserved for final evaluation.
 
 ## Limitations
 
-This dataset audit does not establish generalization to other networks, time periods, or collection environments. The local Parquet counts and detailed attack labels differ from the UQ/paper reference distribution. The smallest category has 432 observations, limiting the certainty of rare-class metrics. Exact-duplicate and capture-level leakage checks remain incomplete. Results must be described as sample-based dataset evaluation rather than a claim of reliable real-world detection.
+This dataset audit does not establish generalization to other networks, time periods, or collection environments. The supplied CNN paper used different benchmarks from the local 43-column table. The smallest local category has 432 observations, limiting the certainty of rare-class metrics. Exact-duplicate and capture-level leakage checks remain incomplete. Results must be described as sample-based dataset evaluation rather than a claim of reliable real-world detection.

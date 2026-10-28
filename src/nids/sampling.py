@@ -81,6 +81,7 @@ def sample_parquet(
     seed: int = 42,
     batch_size: int = 100_000,
     default_cap: int | None = None,
+    log1p_columns: Sequence[str] = (),
 ) -> tuple[np.ndarray, np.ndarray, dict[object, int]]:
     """Read selected numeric features and return a bounded per-class sample."""
     if target_column not in {"Label", "Attack"}:
@@ -88,13 +89,23 @@ def sample_parquet(
     if batch_size <= 0:
         raise ValueError("batch_size must be positive")
     required = [*feature_columns, target_column]
+    invalid_log_columns = set(log1p_columns) - set(feature_columns)
+    if invalid_log_columns:
+        raise ValueError(f"Log-transformed columns must be selected predictors: {sorted(invalid_log_columns)}")
     parquet = pq.ParquetFile(path)
     missing = set(required) - set(parquet.schema_arrow.names)
     if missing:
         raise ValueError(f"Requested columns are missing: {sorted(missing)}")
     reservoir = StratifiedReservoir(class_caps, seed=seed, default_cap=default_cap)
     for batch in parquet.iter_batches(batch_size=batch_size, columns=required):
-        columns = [batch.column(name).to_numpy(zero_copy_only=False) for name in feature_columns]
+        columns = []
+        for name in feature_columns:
+            values = batch.column(name).to_numpy(zero_copy_only=False)
+            if name in log1p_columns:
+                if not np.isfinite(values).all() or np.any(values < 0):
+                    raise ValueError(f"Feature {name!r} must be finite and nonnegative for log1p")
+                values = np.log1p(values)
+            columns.append(values)
         with np.errstate(over="ignore", invalid="ignore"):
             x = np.column_stack(columns).astype(np.float32, copy=False)
         if not np.isfinite(x).all():

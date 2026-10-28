@@ -25,6 +25,8 @@ def main() -> None:
     parser.add_argument("--run-suffix", default="",
                         help="Optional suffix for model and metric filenames")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--log-rates", action="store_true",
+                        help="Include both extreme directional rate fields after log1p")
     args = parser.parse_args()
 
     tasks = ("binary", "multiclass") if args.task == "all" else (args.task,)
@@ -40,6 +42,7 @@ def main() -> None:
             validation_only=args.validation_only,
             run_suffix=args.run_suffix,
             seed=args.seed,
+            log_rates=args.log_rates,
         )
         print(json.dumps(summary, indent=2))
 

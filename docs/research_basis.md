@@ -1,47 +1,45 @@
 # Research basis
 
-## Source checked
+## Reference source
 
-The repository did not contain a paper or bibliography file. The associated NetFlow v2 paper was identified from the University of Queensland (UQ) dataset page and read from its public preprint:
+The user supplied the IEEE conference paper *Optimization of Algorithm for Network Traffic Anomaly Detection Using Convolutional Neural Networks (CNN)* by Teng Li, presented at IACIS 2024 (DOI: [10.1109/IACIS61494.2024.10721912](https://doi.org/10.1109/IACIS61494.2024.10721912)). The local source PDF is the paper cited here. The project dataset is the local 43-column table described below; it is not one of the datasets used in the paper.
 
-Sarhan, Mohanad; Layeghy, Siamak; Portmann, Marius. “Towards a Standard Feature Set for Network Intrusion Detection System Datasets.” *Mobile Networks and Applications* 27 (2022), 357–370. [DOI](https://doi.org/10.1007/s11036-021-01843-0) · [arXiv preprint](https://arxiv.org/abs/2101.11315).
+## What the paper actually did and reported
 
-UQ describes NetFlow v2 as 43 extended features and links the paper as the methodological reference. The local feature dictionary is `data/raw/NetFlow v2 Features.csv`.
+- **Objective:** design a CNN-based method for network traffic anomaly detection and discuss multi-class attack recognition, noise sensitivity, class imbalance, and cross-dataset generalization.
+- **Datasets:** it names KDD Cup 99 and NSL-KDD. The reported cross-dataset table trains on KDD Cup 99 and tests on NSL-KDD. It does not use this project's local 43-column dataset.
+- **Preprocessing:** it recommends standardizing features and discusses augmentation with random noise and time-series extension. It gives no exact scaler, augmentation algorithm, or fit protocol.
+- **Model:** three convolution layers, 3×3 kernels, 2×2 max pooling, Adam, learning rate 0.001, batch size 64. It gives no layer widths, activations, padding, input tensor construction, regularization values, or code. Cross entropy is described for binary classification.
+- **Comparators and environment:** CNN versus SVM and decision tree; Python 3.7 and TensorFlow 2.3 on a high-performance server.
+- **Imbalance:** the paper describes an imbalance experiment and reports accuracy falling from 97.5% to 80.0%, but its listed class-count sequence and experimental protocol are ambiguous. It does not clearly specify class weights, resampling, or another reproducible imbalance treatment.
+- **Metrics/results:** Table I reports CNN accuracy 98.5%, precision 97.8%, recall 99.0%, F1 98.4%, training time 3.5 hours, test time 0.002 seconds/sample, and memory 3000 MB. It reports 95.2% accuracy for SVM and 93.1% for decision tree. The abstract separately says 99.0% accuracy without noise, so the paper contains an unexplained discrepancy. Its KDD-to-NSL table reports accuracy 98.5% to 96.2%, precision 97.8% to 95.1%, recall 99.0% to 97.0%, F1 98.4% to 96.0%, false alarm rate 1.5% to 3.8%, and underreporting rate 1.0% to 3.0%.
+- **Limitations:** the paper acknowledges lower performance on some attack types, sensitivity to increased noise, imbalance-related degradation, cross-dataset performance drops, and the need for real-world testing.
 
-## What the paper did
+These are paper-reported claims, not results obtained by this project. The paper's missing architecture and preprocessing details prevent exact reproduction.
 
-- It proposed and evaluated common 12-feature and extended 43-feature NetFlow sets across multiple NIDS datasets. The stated goal was comparability across datasets and network environments.
-- It generated the NetFlow records from public PCAPs using nProbe and matched flow identifiers against published ground-truth events for labeling. The paper describes the features as flow/header-derived and not payload-dependent.
-- Its model comparison used Extra Trees. It reports binary and multiclass results, including accuracy, AUC, F1, detection rate, false-alarm rate, and prediction time.
-- The methods section reports dropping flow identifiers (IDs, endpoint IPs/ports, timestamps, start/end times), applying min-max normalization, and a 70/30 train/test setup with five cross-validation splits. TTL features were additionally removed for UNSW-NB15 variants due to extreme correlation with labels.
-- For the paper's NF-CSE-CIC-IDS2018-v2 dataset, it reports 18,893,708 flows and seven categories (Benign plus six aggregated attack categories). Its Extra Trees results are 99.35% binary accuracy, 0.9829 AUC, 0.97 F1, 96.89% detection rate, and 0.31% false-alarm rate; multiclass accuracy is 96.90% with 0.98 weighted F1. The paper also identifies weak classes, including web brute-force categories, infiltration, and SQL Injection.
+## What this project will reproduce or use from the reference
 
-These are published-paper results, not results from this implementation.
+- Keep the goal as flow-level network anomaly detection, and report attack-sensitive metrics rather than accuracy alone.
+- Treat class imbalance, rare-category performance, robustness, and cross-domain generalization as limitations that need explicit evaluation.
+- Use the paper's CNN as research context, not as a claim that its specific model was reproduced.
 
-## What this project reproduces
+## Project-specific reproduction and changes
 
-- The same flow-level problem framing and 43-field NetFlow v2 family, with separate binary `Label` and multiclass `Attack` tasks.
-- The paper's use of a tree ensemble as a relevant comparison point and reporting of intrusion-sensitive metrics.
-- A train/validation/test workflow that keeps the test partition out of model selection.
+- **Dataset:** use the local Parquet file `data/raw/NF-CSE-CIC-IDS2018-V2.parquet`. Its audited shape is 17,129,715 rows and 43 columns: 41 numeric predictors plus `Label` and `Attack`. It has 15 observed attack categories. These counts describe the local file only.
+- **Tasks:** separate binary classification using `Label` and multiclass classification using `Attack`; neither target is an input feature.
+- **Models:** the implemented baseline and selected tabular candidate are majority prediction, logistic regression, and histogram gradient boosting. No CNN is currently implemented: the paper does not specify how its 2D CNN consumes tabular columns, and imposing an arbitrary 2D arrangement would not be a faithful or defensible reproduction. The local runtime also has no TensorFlow or PyTorch installed. The tabular models provide a reproducible baseline for a later, explicitly justified neural-network comparison.
+- **Scale and evaluation:** streaming per-class samples bound memory on the laptop; splits are stratified 70/15/15; model selection uses validation data; selected-model test metrics are reported with source-frequency weights. Results are sample-based and are not full-dataset training results.
+- **Feature handling:** remove the audited constant feature; omit endpoint ports as a conservative leakage-control choice because label construction can be related to endpoint tuples, not because the supplied paper instructs it. The extreme rate fields exceed float32 range raw; a validation-only `log1p` variant included them but did not change binary F1. A separate validation-only ablation also found unchanged binary F1 after dropping `FLOW_DURATION_MILLISECONDS`.
 
-## What this project changes or extends
+## What cannot be verified
 
-- The current local Parquet file has 17,129,715 rows and 15 attack categories. This differs from the UQ/paper reference distribution (18,893,708 rows, seven categories), so exact reproduction of the paper's reported experiment is not possible with the checked-in local data variant.
-- This dataset's 43 columns comprise 41 numeric flow features plus `Label` and `Attack`; it does not include the endpoint IP columns discussed in the paper. The supplied CSV dictionary describes the broader feature set, so its row names are reconciled to the actual Parquet schema before use.
-- The first experiment uses bounded, reproducible per-class samples to fit on a laptop, while streaming the source Parquet file. Results must be labeled sample-based, not full-data fitting.
-- It follows the paper's removal of endpoint ports as identifiers to reduce endpoint-specific bias; the local table lacks endpoint IPs and timestamps.
-- Logistic regression provides a simple learned baseline, and histogram gradient boosting is the stronger tabular candidate. Preprocessing is fitted through the training pipeline. Class-frequency weights are used for evaluation to correct the deliberate capped sampling; training uses balanced class weights.
-- The local audit found finite but extreme rate features and a highly suspicious duration distribution. Such fields require explicit ablation; they are not explained by the paper's methodology.
+- The local dataset's exact provenance/version manifest and the reason its row/category counts differ from other releases carrying similar names.
+- Whether the paper's CNN input was 2D tabular reshaping or another representation; the feature order and tensor construction are not specified.
+- The paper's exact train/test partitions, random seed, CNN layer widths/activations, augmentation and standardization formulas, detailed class frequencies, and imbalance-handling procedure.
+- Whether port exclusion improves transferability for this local dataset. It is a precautionary choice, not a verified finding.
+- The calculation formulas and causes of the extreme directional rate values and duration values. The supplied local dictionary gives names/descriptions, but does not resolve those edge cases.
 
-## What cannot be verified from the source
+## Local data sources
 
-- The paper does not give a complete estimator parameter configuration or random seed in the accessible methods text.
-- The exact split indices, capture grouping, deduplication policy, and whether the five cross-validation folds were group/time-aware are not specified.
-- It does not describe a class-resampling or class-weighting method in the cited evaluation section.
-- The current local Parquet file's provenance relative to the UQ download is not represented by a checksum or version manifest. Its materially different counts and labels are verified facts; the cause of the difference is unknown.
-- Feature formulas beyond the supplied descriptions (especially unusual rate fields and duration edge cases) are not established by the local dictionary. Treat formulas and interpretations as unverified unless independently documented by the exporter.
-
-## Dataset and feature references
-
-- [UQ NetFlow dataset page](https://staff.itee.uq.edu.au/marius/NIDS_datasets/) describes the v2 feature count, release counts, and category definitions.
-- [UQ Cyber Research Centre overview](https://www.cyber.uq.edu.au/node/824) identifies the NetFlow v2 methodology paper and feature dictionary.
+- `data/raw/NF-CSE-CIC-IDS2018-V2.parquet`: local records used by the experiments.
+- `data/raw/NetFlow v2 Features.csv`: local feature dictionary. It describes a wider set than the 41 predictors present in the Parquet schema; only matching columns are used.

@@ -63,6 +63,21 @@ class StratifiedReservoirTests(unittest.TestCase):
                     class_caps={0: 1, 1: 1}, batch_size=2,
                 )
 
+    def test_log1p_sampling_makes_extreme_rates_float32_representable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "flows.parquet"
+            pq.write_table(pa.table({
+                "rate": [6.58802154063901e304, 1e73],
+                "Label": [0, 1],
+                "Attack": ["Benign", "Bot"],
+            }), path)
+            x, _, _ = sample_parquet(
+                str(path), feature_columns=["rate"], target_column="Label",
+                class_caps={0: 1, 1: 1}, batch_size=2, log1p_columns=["rate"],
+            )
+            self.assertTrue(np.isfinite(x).all())
+            self.assertGreater(float(x.max()), 100.0)
+
 
 if __name__ == "__main__":
     unittest.main()

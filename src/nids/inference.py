@@ -28,6 +28,7 @@ def predict_record(artifact: Mapping[str, Any], record: Mapping[str, Any]) -> di
     if missing:
         raise ValueError(f"Missing required flow features: {missing}")
     values = []
+    log1p_features = set(artifact.get("log1p_features", ()))
     for name in features:
         value = record[name]
         if isinstance(value, bool):
@@ -36,8 +37,14 @@ def predict_record(artifact: Mapping[str, Any], record: Mapping[str, Any]) -> di
             numeric = float(value)
         except (TypeError, ValueError) as exc:
             raise ValueError(f"Feature {name!r} must be numeric") from exc
-        if not np.isfinite(numeric) or abs(numeric) > np.finfo(np.float32).max:
-            raise ValueError(f"Feature {name!r} must be finite and representable as float32")
+        if not np.isfinite(numeric):
+            raise ValueError(f"Feature {name!r} must be finite")
+        if name in log1p_features:
+            if numeric < 0:
+                raise ValueError(f"Feature {name!r} must be nonnegative for log1p")
+            numeric = float(np.log1p(numeric))
+        if abs(numeric) > np.finfo(np.float32).max:
+            raise ValueError(f"Feature {name!r} must be representable as float32 after preprocessing")
         values.append(numeric)
 
     x = np.asarray([values], dtype=np.float32)
