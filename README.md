@@ -8,6 +8,8 @@ Repository audit, bounded-memory dataset validation, sampled training, held-out 
 
 The binary classification results and validation experiments are summarized in the [binary experiment brief](reports/experiments/binary_presentation_brief.md). The multiclass follow-up comparing balanced and source-prior training is documented in the [multiclass experiment brief](reports/experiments/multiclass_presentation_brief.md).
 
+For a step-by-step guide to running the app, reproducing both experiments, making a prediction, and understanding the metrics, see the [project owner walkthrough](docs/owner_walkthrough.md).
+
 For a nontechnical, interactive presentation, launch the local [FlowWatch demo](docs/demo_guide.md):
 
 ```bash
