@@ -198,7 +198,7 @@
       <div class="step"><div class="step-num">03 · EXPLAIN</div><strong>Show a readable result</strong><p>The demo gives a benign-or-attack answer, a likely category, and a reminder that the model can be wrong.</p></div>
     </section>
   </main>
-  <footer>FlowWatch is an educational, offline demonstration of flow-based network anomaly detection. It is not a live monitoring or incident-response system.</footer>
+  <footer>FlowWatch is an educational demonstration of flow-based network anomaly detection. It uses precomputed examples and is not a live monitoring or incident-response system.</footer>
   <script>
     const state = { examples: [], selected: null };
     const $ = (id) => document.getElementById(id);
@@ -220,10 +220,11 @@
       return node;
     }
     async function loadInitial() {
-      const [examplesResponse, summaryResponse] = await Promise.all([fetch('/api/examples'), fetch('/api/summary')]);
-      if (!examplesResponse.ok || !summaryResponse.ok) throw new Error('The demo could not load its examples or score summary.');
-      state.examples = await examplesResponse.json();
-      const summary = await summaryResponse.json();
+      const response = await fetch('./demo_bundle.json');
+      if (!response.ok) throw new Error('The demo could not load its score summary and examples.');
+      const bundle = await response.json();
+      state.examples = bundle.examples;
+      const summary = bundle;
       $('m-binary-f1').textContent = pct(summary.binary.attack_f1);
       $('m-precision').textContent = pct(summary.binary.attack_precision);
       $('m-recall').textContent = pct(summary.binary.attack_recall);
@@ -248,7 +249,7 @@
       });
       if (state.examples.length) selectExample(state.examples[0].id);
     }
-    async function selectExample(id) {
+    function selectExample(id) {
       state.selected = id;
       document.querySelectorAll('.scenario').forEach((button, index) => button.setAttribute('aria-pressed', String(state.examples[index]?.id === id)));
       $('analyze').disabled = false;
@@ -256,8 +257,7 @@
       const example = state.examples.find((item) => item.id === id);
       const factsRoot = $('flow-facts'); factsRoot.replaceChildren();
       try {
-        const response = await fetch(`/api/flow-summary?example_id=${encodeURIComponent(id)}`);
-        const flow = await response.json();
+        const flow = example.flow_summary;
         const duration = Number(flow.duration_ms || 0);
         const packets = Number(flow.packets || 0);
         const bytes = Number(flow.bytes || 0);
@@ -275,7 +275,7 @@
       $('empty-state').classList.add('hidden');
       $('result').classList.add('show');
       const isAttack = Number(data.binary.prediction) === 1;
-      const isCorrect = String(data.reference.known_attack) === String(data.multiclass.prediction);
+      const isCorrect = String(data.known_attack) === String(data.multiclass.prediction);
       $('binary-title').textContent = isAttack ? 'Possible attack pattern' : 'Looks benign to this model';
       const pill = $('binary-pill');
       pill.textContent = isAttack ? 'Flagged for review' : 'No attack flag';
@@ -298,23 +298,14 @@
       $('reference').replaceChildren();
       const known = document.createElement('span');
       known.append('Dataset reference label: ');
-      const knownStrong = document.createElement('strong'); knownStrong.textContent = pretty(data.reference.known_attack); known.appendChild(knownStrong);
+      const knownStrong = document.createElement('strong'); knownStrong.textContent = pretty(data.known_attack); known.appendChild(knownStrong);
       known.append(` · Category guess ${isCorrect ? 'matches' : 'does not match'} this recorded label.`);
       $('reference').appendChild(known);
     }
-    $('analyze').addEventListener('click', async () => {
+    $('analyze').addEventListener('click', () => {
       if (!state.selected) return;
-      const button = $('analyze'); button.disabled = true; button.textContent = 'Analyzing…'; $('error').textContent = '';
-      try {
-        const response = await fetch('/api/predict', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({example_id: state.selected}) });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Analysis failed.');
-        showResult(result);
-      } catch (error) {
-        $('error').textContent = error.message || 'Could not connect to the local demo server.';
-      } finally {
-        button.disabled = false; button.textContent = 'Analyze this example';
-      }
+      const result = state.examples.find((item) => item.id === state.selected);
+      if (result) showResult(result);
     });
     loadInitial().catch((error) => { $('error').textContent = error.message || 'Demo could not start.'; });
   </script>

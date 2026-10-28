@@ -2,6 +2,8 @@
 
 Use this guide from the project folder to learn the work by running it in small steps. Start with inspection and the demo; retraining is optional because local model files are already present on the development machine.
 
+If you are on the lab PC without this computer's local files, use the hosted demo described in [deployment notes](deployment.md). The lab-ready static demo shows the saved examples/results; full model retraining still requires the local Parquet dataset.
+
 ## 1. Open a terminal in the project
 
 ```bash

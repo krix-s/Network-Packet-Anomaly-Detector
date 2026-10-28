@@ -10,13 +10,13 @@ The binary classification results and validation experiments are summarized in t
 
 For a step-by-step guide to running the app, reproducing both experiments, making a prediction, and understanding the metrics, see the [project owner walkthrough](docs/owner_walkthrough.md).
 
-For a nontechnical, interactive presentation, launch the local [FlowWatch demo](docs/demo_guide.md):
+For a nontechnical, interactive presentation, use the [FlowWatch demo](docs/demo_guide.md). The local version is:
 
 ```bash
-.venv/bin/python scripts/demo_server.py
+python3 scripts/demo_server.py
 ```
 
-Then open http://127.0.0.1:8000. The page uses recorded examples from the local dataset; it does not capture live traffic.
+Then open http://127.0.0.1:8000. The page uses precomputed examples from the local dataset; it does not capture live traffic. The hosted version is intended for lab access at https://krix-s.github.io/Network-Packet-Anomaly-Detector/ after GitHub Pages is enabled in repository settings. See [deployment notes](docs/deployment.md) for the one-time setup.
 
 ## Dataset setup
 

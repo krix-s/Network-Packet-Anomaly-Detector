@@ -33,6 +33,8 @@
 - [x] Record multiclass per-class validation diagnostics, held-out metrics, presentation brief, and weighting caveats.
 - [x] Add a local, no-extra-dependency browser demo with plain-language flow explanations and curated dataset examples.
 - [x] Add a layman-facing demo guide and run checks against the local demo API.
+- [x] Package precomputed demo results as a static site and add a GitHub Pages workflow that excludes the dataset, model binaries, and full feature rows.
+- [ ] Enable GitHub Pages with the repository's `GitHub Actions` publishing source and verify the public site URL.
 - [x] Perform final verification and push the results/documentation update.
 
 Current seed-43 sample results and validation-only feature ablations are reported in `README.md` and `reports/experiments/`; generated models are ignored by Git. Multiclass has both balanced and source-prior reports; the latter was selected using validation macro-F1 and reaches 0.7887 source-weighted test macro-F1, while missing all 65 sampled SQL Injection test examples.
