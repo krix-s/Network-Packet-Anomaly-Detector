@@ -29,6 +29,7 @@ These are published-paper results, not results from this implementation.
 - The current local Parquet file has 17,129,715 rows and 15 attack categories. This differs from the UQ/paper reference distribution (18,893,708 rows, seven categories), so exact reproduction of the paper's reported experiment is not possible with the checked-in local data variant.
 - This dataset's 43 columns comprise 41 numeric flow features plus `Label` and `Attack`; it does not include the endpoint IP columns discussed in the paper. The supplied CSV dictionary describes the broader feature set, so its row names are reconciled to the actual Parquet schema before use.
 - The first experiment uses bounded, reproducible per-class samples to fit on a laptop, while streaming the source Parquet file. Results must be labeled sample-based, not full-data fitting.
+- It follows the paper's removal of endpoint ports as identifiers to reduce endpoint-specific bias; the local table lacks endpoint IPs and timestamps.
 - Logistic regression provides a simple learned baseline, and histogram gradient boosting is the stronger tabular candidate. Preprocessing is fitted through the training pipeline. Class-frequency weights are used for evaluation to correct the deliberate capped sampling; training uses balanced class weights.
 - The local audit found finite but extreme rate features and a highly suspicious duration distribution. Such fields require explicit ablation; they are not explained by the paper's methodology.
 

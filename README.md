@@ -51,7 +51,7 @@ The saved artifact fixes the feature order and includes the fitted estimator. Bi
 
 ## Initial measured experiment
 
-The first completed experiment used 142,000 binary samples and 135,126 multiclass samples. Models selected by validation were evaluated on stratified held-out subsets, with source-count reweighting. These figures are sample-based estimates and should not be read as full-data training results.
+The initial completed experiment used 142,000 binary samples and 135,126 multiclass samples. It included source/destination ports and selected models by validation before evaluating stratified held-out subsets with source-count reweighting. These are preliminary sample-based estimates, not full-data training results; the next run removes ports to follow the reference paper and must recheck the duration shortcut.
 
 | Task | Selected model | Validation selection score | Test accuracy | Test F1 | Additional test metrics |
 |---|---|---:|---:|---:|---|

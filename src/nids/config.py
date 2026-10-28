@@ -13,6 +13,8 @@ TARGET_COLUMNS = (BINARY_TARGET, MULTICLASS_TARGET)
 # in the source and should be revisited in an explicit comparison.
 INITIAL_EXCLUDED_FEATURES = (
     "FTP_COMMAND_RET_CODE",  # constant zero in the complete dataset audit
+    "L4_SRC_PORT",  # paper drops endpoint ports to reduce endpoint-specific bias
+    "L4_DST_PORT",
     "SRC_TO_DST_SECOND_BYTES",  # finite, but reaches 6.6e304
     "DST_TO_SRC_SECOND_BYTES",  # finite, but reaches 3.2e73
 )
