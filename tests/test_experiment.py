@@ -6,11 +6,23 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from nids.experiment import run_experiment
+from nids.experiment import _splits, run_experiment
 from nids.inference import load_artifact, predict_record
 
 
 class EndToEndExperimentTests(unittest.TestCase):
+    def test_stratified_split_is_reproducible_disjoint_and_70_15_15(self):
+        y = np.repeat([0, 1], 100)
+        first = _splits(y)
+        second = _splits(y)
+        for a, b in zip(first, second):
+            np.testing.assert_array_equal(a, b)
+        train, validation, test = first
+        self.assertEqual((len(train), len(validation), len(test)), (140, 30, 30))
+        self.assertFalse(set(train) & set(validation))
+        self.assertFalse(set(train) & set(test))
+        self.assertFalse(set(validation) & set(test))
+
     def test_binary_and_multiclass_save_reload_and_predict(self):
         rng = np.random.default_rng(12)
         attacks = np.repeat(["Benign", "Bot", "SQL"], 60)

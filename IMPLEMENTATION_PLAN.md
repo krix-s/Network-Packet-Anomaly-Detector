@@ -23,9 +23,11 @@
 - [x] Implement binary and multiclass sampled experiments with validation-based selection and held-out test metrics.
 - [x] Persist task-specific model artifacts locally and metrics as JSON.
 - [x] Add validated CLI inference and small-fixture end-to-end tests.
-- [ ] Re-run current trainer version to collect majority baseline and runtime measurements.
-- [ ] Run the duration-feature validation-only ablation before deciding whether the strong binary score is shortcut-driven.
-- [ ] Verify official feature descriptions against the local dictionary; document unverified formulas.
-- [ ] Finalize repository docs/results and push the coherent implementation commits.
+- [x] Re-run current trainer version to collect majority baseline and runtime measurements.
+- [x] Run a validation-only duration ablation; its binary F1 was unchanged.
+- [x] Read the associated NetFlow v2 paper and document its methodology and differences from the local files.
+- [x] Document actual sample-based metrics, limitations, model settings, and inference commands.
+- [ ] Test a monotonic transform for the extreme rate fields; their formulas remain unverified.
+- [ ] Perform final verification and push the results/documentation update.
 
 The first sampled train/test run completed. Its results and limitations are reported in `README.md`; generated models are ignored by Git.

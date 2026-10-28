@@ -24,6 +24,7 @@ def main() -> None:
                         help="Do not inspect the held-out test partition")
     parser.add_argument("--run-suffix", default="",
                         help="Optional suffix for model and metric filenames")
+    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
     tasks = ("binary", "multiclass") if args.task == "all" else (args.task,)
@@ -38,6 +39,7 @@ def main() -> None:
             drop_duration=args.drop_duration,
             validation_only=args.validation_only,
             run_suffix=args.run_suffix,
+            seed=args.seed,
         )
         print(json.dumps(summary, indent=2))
 

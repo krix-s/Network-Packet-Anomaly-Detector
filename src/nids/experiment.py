@@ -36,15 +36,15 @@ from .sampling import sample_parquet
 SEED = 42
 
 
-def _splits(y: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _splits(y: np.ndarray, seed: int = SEED) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     indices = np.arange(y.size)
     train_val, test = train_test_split(
-        indices, test_size=0.15, random_state=SEED, stratify=y
+        indices, test_size=0.15, random_state=seed, stratify=y
     )
     train, validation = train_test_split(
         train_val,
         test_size=0.1764705882,
-        random_state=SEED,
+        random_state=seed,
         stratify=y[train_val],
     )
     return train, validation, test
@@ -116,6 +116,7 @@ def run_experiment(
     drop_duration: bool = False,
     validation_only: bool = False,
     run_suffix: str = "",
+    seed: int = SEED,
 ) -> dict[str, Any]:
     if task not in {"binary", "multiclass"}:
         raise ValueError("task must be 'binary' or 'multiclass'")
@@ -138,21 +139,21 @@ def run_experiment(
         target_column=target,
         class_caps=caps,
         default_cap=default_cap,
-        seed=SEED,
+        seed=seed,
         batch_size=batch_size,
     )
     sampling_seconds = perf_counter() - sample_started
     classes, sample_counts = np.unique(y, return_counts=True)
     counts_by_class = dict(zip(classes.tolist(), sample_counts.tolist()))
     weights = np.asarray([population_counts[value] / counts_by_class[value] for value in y])
-    train, validation, test = _splits(y)
+    train, validation, test = _splits(y, seed=seed)
 
     baseline = make_pipeline(
         StandardScaler(),
         LogisticRegression(
             max_iter=1000,
             tol=1e-3,
-            random_state=SEED,
+            random_state=seed,
         ),
     )
     stronger = HistGradientBoostingClassifier(
@@ -160,7 +161,7 @@ def run_experiment(
         max_leaf_nodes=31,
         learning_rate=0.1,
         l2_regularization=1.0,
-        random_state=SEED,
+        random_state=seed,
     )
     candidates = {
         "majority_class": DummyClassifier(strategy="most_frequent"),
@@ -225,12 +226,12 @@ def run_experiment(
         "classes": classes.tolist(),
         "model_name": selected_name,
         "model": selected,
-        "seed": SEED,
+        "seed": seed,
     }, artifact_path)
     summary = {
         "task": task,
         "target": target,
-        "seed": SEED,
+        "seed": seed,
         "sampled_rows": int(len(y)),
         "sample_matrix_bytes": int(x.nbytes),
         "source_rows_scanned": int(metadata["rows"]),

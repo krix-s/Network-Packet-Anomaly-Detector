@@ -29,14 +29,14 @@ The audit iterates through Arrow batches; it does not load the complete dataset 
 Train either task independently, or both in sequence:
 
 ```bash
-PYTHONPATH=src python scripts/train.py --task binary
-PYTHONPATH=src python scripts/train.py --task multiclass
+PYTHONPATH=src python scripts/train.py --task binary --seed 43
+PYTHONPATH=src python scripts/train.py --task multiclass --seed 43
 # or --task all
 ```
 
 The trainer scans the Parquet file in Arrow batches and keeps at most 125,000 benign plus 17,000 attack samples for binary classification. Multiclass sampling keeps at most 12,000 rows per category and retains every smaller class in full. Each sample is split into 70% train, 15% validation, and 15% test with seed 42. The validation set selects between majority-class, logistic-regression, and histogram-gradient-boosting models. Class-balanced sample weights are applied only during model fitting; source class counts reweight metrics to reflect the source prevalence. The test partition is evaluated once after selection.
 
-Models are written to ignored local files under `models/`. Metric JSON files are written to `reports/experiments/`. The flow duration ablation can be run with `--task binary --drop-duration --validation-only --run-suffix without_duration`; it reads the source once and intentionally does not inspect test metrics.
+Models are written to ignored local files under `models/`. Metric JSON files are written to `reports/experiments/`. Reproduce the validation-only duration ablation with `PYTHONPATH=src python scripts/train.py --task binary --drop-duration --validation-only --run-suffix without_duration --seed 43`; it intentionally does not inspect test metrics.
 
 ## Inference
 
@@ -49,26 +49,33 @@ PYTHONPATH=src python scripts/predict.py --model models/multiclass_model.joblib 
 
 The saved artifact fixes the feature order and includes the fitted estimator. Binary `Label` and multiclass `Attack` predictions use separate artifacts.
 
-## Initial measured experiment
+## Current sampled experiment (seed 43)
 
-The initial completed experiment used 142,000 binary samples and 135,126 multiclass samples. It included source/destination ports and selected models by validation before evaluating stratified held-out subsets with source-count reweighting. These are preliminary sample-based estimates, not full-data training results; the next run removes ports to follow the reference paper and must recheck the duration shortcut.
+These runs use the paper-aligned feature exclusions, 142,000 binary and 135,126 multiclass sampled rows, and stratified 70/15/15 train/validation/test partitions. The training sample is not the entire dataset. Validation selection scores and the final selected model's test metrics are source-frequency weighted to correct the capped class sampling.
 
-| Task | Selected model | Validation selection score | Test accuracy | Test F1 | Additional test metrics |
-|---|---|---:|---:|---:|---|
-| Binary `Label` | HistGradientBoosting | attack F1 0.9760 | 0.9954 | attack F1 0.9800 | precision 0.9975; recall 0.9631; ROC-AUC 0.9898; PR-AUC 0.9780; FPR 0.00032 |
-| Multiclass `Attack` | HistGradientBoosting | macro-F1 0.7054 | 0.5698 | macro-F1 0.6995 | weighted-F1 0.7146 |
+| Task | Validation F1: majority / logistic / HGB | Selected model | Test accuracy | Test F1 | Test precision / recall | ROC-AUC / PR-AUC / FPR |
+|---|---|---|---:|---:|---:|---|
+| Binary `Label` | attack F1: 0.0000 / 0.8529 / 0.9766 | HistGradientBoosting | 0.9952 | attack F1 0.9792 | 0.9955 / 0.9635 | 0.9893 / 0.9776 / 0.00059 |
 
-For multiclass, the test sample had only 65 SQL Injection examples; its estimated precision was 0.0167, recall 0.8615, and F1 0.0327. `Infilteration` also had low weighted precision (0.0142) despite 0.8689 recall. The model overpredicts these categories, and their per-class results are uncertain. See the full confusion matrices and per-class metrics in `reports/experiments/` after training.
+| Task | Validation macro-F1: majority / logistic / HGB | Selected model | Test accuracy | Test macro-F1 | Test weighted-F1 |
+|---|---|---|---:|---:|---:|
+| Multiclass `Attack` | 0.0625 / 0.5680 / 0.6907 | HistGradientBoosting | 0.5737 | 0.6915 | 0.7180 |
 
-The simple logistic baseline did not converge within its initial 300-iteration run. The trainer now uses a higher iteration limit and includes a majority-class baseline; those candidates need a fresh run before their results are reported. The very strong binary result also remains subject to the duration-feature shortcut check described in the plan.
+The binary test confusion matrix contains 18,739 true benign, 11 false positives, 93 missed attacks, and 2,457 detected attacks (sample counts). Source-weighted FPR is 0.00059. This illustrates the trade-off: fewer false alarms come at the cost of some missed attacks; the operating threshold has not been tuned for a deployment setting.
 
-## Planned experiments
+The multiclass report is weak for several rare categories. SQL Injection has only 65 test examples (out of 432 total); weighted precision/recall/F1 are 0.00155 / 0.5846 / 0.00309. Brute Force -Web: 0.00358 / 0.3271 / 0.00709; Brute Force -XSS: 0.00195 / 0.3525 / 0.00387; Infilteration: 0.0150 / 0.8928 / 0.0296. High recalls paired with very low precision show substantial false alarms into these categories. Treat their estimates as uncertain. Full per-class results and confusion matrices are in `reports/experiments/multiclass_metrics.json`.
+
+The validation-only binary duration ablation selected the same HistGradientBoosting model and produced the same attack F1 (0.976589) with `FLOW_DURATION_MILLISECONDS` excluded. This indicates no score change at that operating point on this sample; it does not prove the duration field is free of dataset artifacts. The ablation did not evaluate the test partition. Full details are in `reports/experiments/binary_without_duration_metrics.json`.
+
+The earlier seed-42 run included source/destination ports; it is retained in Git history only. Current model artifacts exclude those ports to follow the reference paper. The two rate fields are also excluded because their magnitudes exceed float32 range and their exact formulas remain unverified; a log transform has not yet been tested.
+
+## Pipeline decisions
 
 1. Binary flow classification using `Label` (0 benign, 1 attack).
 2. Separate multiclass flow classification using `Attack`, retaining all 15 categories and reporting support for rare categories.
 
-The feature selector excludes both target columns from predictors in either experiment. The initial feature list omits the all-zero `FTP_COMMAND_RET_CODE` and the two extreme-magnitude directional bytes-per-second fields; these rate fields remain in the raw data and should be compared in a documented alternative. Preprocessing must be fit on training data only, and test data must remain untouched until the final evaluation.
+The feature selector excludes both target columns from predictors in either experiment. The model omits the all-zero `FTP_COMMAND_RET_CODE`, source/destination ports to follow the reference paper, and the two extreme-magnitude directional bytes-per-second fields, which are beyond float32 range. Those rate fields remain in the raw data; a log transform is an open follow-up. Preprocessing is fit on training data only, and test data is reserved for final evaluation.
 
 ## Limitations
 
-This dataset audit does not establish generalization to other networks, time periods, or collection environments. The local Parquet counts and detailed attack labels differ from the UQ/paper reference distribution. The smallest category has 432 observations, limiting the certainty of rare-class metrics. Results must be described as sample-based dataset evaluation rather than a claim of reliable real-world detection.
+This dataset audit does not establish generalization to other networks, time periods, or collection environments. The local Parquet counts and detailed attack labels differ from the UQ/paper reference distribution. The smallest category has 432 observations, limiting the certainty of rare-class metrics. Exact-duplicate and capture-level leakage checks remain incomplete. Results must be described as sample-based dataset evaluation rather than a claim of reliable real-world detection.

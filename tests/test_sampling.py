@@ -1,8 +1,12 @@
 import unittest
+import tempfile
+from pathlib import Path
 
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 
-from nids.sampling import StratifiedReservoir
+from nids.sampling import StratifiedReservoir, sample_parquet
 
 
 class StratifiedReservoirTests(unittest.TestCase):
@@ -30,6 +34,34 @@ class StratifiedReservoirTests(unittest.TestCase):
     def test_nonpositive_cap_is_rejected(self):
         with self.assertRaises(ValueError):
             StratifiedReservoir({0: 0}, seed=1)
+
+    def test_nonfinite_training_feature_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "flows.parquet"
+            pq.write_table(pa.table({
+                "x": [1.0, float("inf")],
+                "Label": [0, 1],
+                "Attack": ["Benign", "Bot"],
+            }), path)
+            with self.assertRaisesRegex(ValueError, "non-finite"):
+                sample_parquet(
+                    str(path), feature_columns=["x"], target_column="Label",
+                    class_caps={0: 1, 1: 1}, batch_size=2,
+                )
+
+    def test_missing_training_feature_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "flows.parquet"
+            pq.write_table(pa.table({
+                "x": [1.0, None],
+                "Label": [0, 1],
+                "Attack": ["Benign", "Bot"],
+            }), path)
+            with self.assertRaisesRegex(ValueError, "non-finite"):
+                sample_parquet(
+                    str(path), feature_columns=["x"], target_column="Label",
+                    class_caps={0: 1, 1: 1}, batch_size=2,
+                )
 
 
 if __name__ == "__main__":

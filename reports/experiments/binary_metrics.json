@@ -1,8 +1,11 @@
 {
   "task": "binary",
   "target": "Label",
-  "seed": 42,
+  "seed": 43,
   "sampled_rows": 142000,
+  "sample_matrix_bytes": 20448000,
+  "source_rows_scanned": 17129715,
+  "sampling_seconds": 9.293491808999988,
   "population_class_counts": {
     "0": 15101685,
     "1": 2028030
@@ -17,8 +20,6 @@
     "test": 21300
   },
   "features": [
-    "L4_SRC_PORT",
-    "L4_DST_PORT",
     "PROTOCOL",
     "L7_PROTO",
     "IN_BYTES",
@@ -58,77 +59,103 @@
   ],
   "excluded_features": [
     "FTP_COMMAND_RET_CODE",
+    "L4_SRC_PORT",
+    "L4_DST_PORT",
     "SRC_TO_DST_SECOND_BYTES",
     "DST_TO_SRC_SECOND_BYTES"
   ],
+  "validation_only": false,
   "selection_metric": "attack_f1_population_weighted",
-  "validation_scores": {
-    "logistic_regression": 0.8566326466290531,
-    "hist_gradient_boosting": 0.9759751686715405
+  "model_configurations": {
+    "majority_class": {
+      "strategy": "most_frequent"
+    },
+    "logistic_regression": {
+      "max_iter": 1000,
+      "tol": 0.001,
+      "scaler": "StandardScaler",
+      "training_weights": "balanced"
+    },
+    "hist_gradient_boosting": {
+      "max_iter": 100,
+      "max_leaf_nodes": 31,
+      "learning_rate": 0.1,
+      "l2_regularization": 1.0,
+      "training_weights": "balanced"
+    }
   },
+  "validation_scores": {
+    "majority_class": 0.0,
+    "logistic_regression": 0.8529157635174072,
+    "hist_gradient_boosting": 0.9765891995292924
+  },
+  "fit_seconds": {
+    "majority_class": 0.010117544999957317,
+    "logistic_regression": 0.523938421000139,
+    "hist_gradient_boosting": 3.65714277699999
+  },
+  "refit_seconds": 4.7650217600000815,
   "selected_model": "hist_gradient_boosting",
   "test_metrics": {
-    "accuracy_weighted": 0.9953536125883488,
+    "accuracy_weighted": 0.9951649456947286,
     "classification_report_population_weighted": {
       "0": {
-        "precision": 0.9950724579025958,
-        "recall": 0.99968,
-        "f1-score": 0.9973709076283199,
+        "precision": 0.9951233284728999,
+        "recall": 0.9994133333333334,
+        "f1-score": 0.9972637172647577,
         "support": 2265252.750000203
       },
       "1": {
-        "precision": 0.9975320311242376,
-        "recall": 0.9631372549019681,
-        "f1-score": 0.9800329601541397,
+        "precision": 0.9954865062358159,
+        "recall": 0.9635294117647131,
+        "f1-score": 0.9792473036687659,
         "support": 304204.5000000031
       },
-      "accuracy": 0.9953536125883495,
+      "accuracy": 0.9951649456947299,
       "macro avg": {
-        "precision": 0.9963022445134166,
-        "recall": 0.9814086274509841,
-        "f1-score": 0.9887019338912297,
+        "precision": 0.9953049173543579,
+        "recall": 0.9814713725490232,
+        "f1-score": 0.9882555104667619,
         "support": 2569457.2500002063
       },
       "weighted avg": {
-        "precision": 0.9953636529563772,
-        "recall": 0.9953536125883496,
-        "f1-score": 0.9953182244624843,
+        "precision": 0.9951663260007937,
+        "recall": 0.9951649456947295,
+        "f1-score": 0.9951307087900062,
         "support": 2569457.2500002063
       }
     },
     "confusion_matrix_sample_counts": [
       [
-        18744,
-        6
+        18739,
+        11
       ],
       [
-        94,
-        2456
+        93,
+        2457
       ]
     ],
     "confusion_matrix_population_weighted": [
       [
-        2264527.869120203,
-        724.88088
+        2263923.801720203,
+        1328.94828
       ],
       [
-        11213.812941176471,
-        292990.6870588287
+        11094.51705882353,
+        293109.98294118163
       ]
     ],
-    "attack_precision_population_weighted": 0.9975320311242376,
-    "attack_recall_population_weighted": 0.9631372549019681,
-    "attack_f1_population_weighted": 0.9800329601541397,
-    "roc_auc_population_weighted": 0.9897783529411787,
-    "pr_auc_population_weighted": 0.977968396014427,
-    "false_positive_rate_population_weighted": 0.00031999999999997135
+    "attack_precision_population_weighted": 0.9954865062358159,
+    "attack_recall_population_weighted": 0.9635294117647131,
+    "attack_f1_population_weighted": 0.9792473036687659,
+    "roc_auc_population_weighted": 0.9893171660130742,
+    "pr_auc_population_weighted": 0.9775778083210083,
+    "false_positive_rate_population_weighted": 0.0005866666666666141
   },
+  "model_path": "models/binary_model.joblib",
   "test_support_sample_counts": {
     "0": 18750,
     "1": 2550
   },
-  "insufficient_test_support": {},
-  "model_path": "models/binary_model.joblib",
-  "results_status": "Initial completed sampled run; trainer was subsequently updated to include a majority baseline and revised logistic settings.",
-  "logistic_regression_convergence_warning": true
+  "insufficient_test_support": {}
 }
