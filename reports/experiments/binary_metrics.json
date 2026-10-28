@@ -1,0 +1,134 @@
+{
+  "task": "binary",
+  "target": "Label",
+  "seed": 42,
+  "sampled_rows": 142000,
+  "population_class_counts": {
+    "0": 15101685,
+    "1": 2028030
+  },
+  "sample_class_counts": {
+    "0": 125000,
+    "1": 17000
+  },
+  "split_rows": {
+    "train": 99400,
+    "validation": 21300,
+    "test": 21300
+  },
+  "features": [
+    "L4_SRC_PORT",
+    "L4_DST_PORT",
+    "PROTOCOL",
+    "L7_PROTO",
+    "IN_BYTES",
+    "IN_PKTS",
+    "OUT_BYTES",
+    "OUT_PKTS",
+    "TCP_FLAGS",
+    "CLIENT_TCP_FLAGS",
+    "SERVER_TCP_FLAGS",
+    "FLOW_DURATION_MILLISECONDS",
+    "DURATION_IN",
+    "DURATION_OUT",
+    "MIN_TTL",
+    "MAX_TTL",
+    "LONGEST_FLOW_PKT",
+    "SHORTEST_FLOW_PKT",
+    "MIN_IP_PKT_LEN",
+    "MAX_IP_PKT_LEN",
+    "RETRANSMITTED_IN_BYTES",
+    "RETRANSMITTED_IN_PKTS",
+    "RETRANSMITTED_OUT_BYTES",
+    "RETRANSMITTED_OUT_PKTS",
+    "SRC_TO_DST_AVG_THROUGHPUT",
+    "DST_TO_SRC_AVG_THROUGHPUT",
+    "NUM_PKTS_UP_TO_128_BYTES",
+    "NUM_PKTS_128_TO_256_BYTES",
+    "NUM_PKTS_256_TO_512_BYTES",
+    "NUM_PKTS_512_TO_1024_BYTES",
+    "NUM_PKTS_1024_TO_1514_BYTES",
+    "TCP_WIN_MAX_IN",
+    "TCP_WIN_MAX_OUT",
+    "ICMP_TYPE",
+    "ICMP_IPV4_TYPE",
+    "DNS_QUERY_ID",
+    "DNS_QUERY_TYPE",
+    "DNS_TTL_ANSWER"
+  ],
+  "excluded_features": [
+    "FTP_COMMAND_RET_CODE",
+    "SRC_TO_DST_SECOND_BYTES",
+    "DST_TO_SRC_SECOND_BYTES"
+  ],
+  "selection_metric": "attack_f1_population_weighted",
+  "validation_scores": {
+    "logistic_regression": 0.8566326466290531,
+    "hist_gradient_boosting": 0.9759751686715405
+  },
+  "selected_model": "hist_gradient_boosting",
+  "test_metrics": {
+    "accuracy_weighted": 0.9953536125883488,
+    "classification_report_population_weighted": {
+      "0": {
+        "precision": 0.9950724579025958,
+        "recall": 0.99968,
+        "f1-score": 0.9973709076283199,
+        "support": 2265252.750000203
+      },
+      "1": {
+        "precision": 0.9975320311242376,
+        "recall": 0.9631372549019681,
+        "f1-score": 0.9800329601541397,
+        "support": 304204.5000000031
+      },
+      "accuracy": 0.9953536125883495,
+      "macro avg": {
+        "precision": 0.9963022445134166,
+        "recall": 0.9814086274509841,
+        "f1-score": 0.9887019338912297,
+        "support": 2569457.2500002063
+      },
+      "weighted avg": {
+        "precision": 0.9953636529563772,
+        "recall": 0.9953536125883496,
+        "f1-score": 0.9953182244624843,
+        "support": 2569457.2500002063
+      }
+    },
+    "confusion_matrix_sample_counts": [
+      [
+        18744,
+        6
+      ],
+      [
+        94,
+        2456
+      ]
+    ],
+    "confusion_matrix_population_weighted": [
+      [
+        2264527.869120203,
+        724.88088
+      ],
+      [
+        11213.812941176471,
+        292990.6870588287
+      ]
+    ],
+    "attack_precision_population_weighted": 0.9975320311242376,
+    "attack_recall_population_weighted": 0.9631372549019681,
+    "attack_f1_population_weighted": 0.9800329601541397,
+    "roc_auc_population_weighted": 0.9897783529411787,
+    "pr_auc_population_weighted": 0.977968396014427,
+    "false_positive_rate_population_weighted": 0.00031999999999997135
+  },
+  "test_support_sample_counts": {
+    "0": 18750,
+    "1": 2550
+  },
+  "insufficient_test_support": {},
+  "model_path": "models/binary_model.joblib",
+  "results_status": "Initial completed sampled run; trainer was subsequently updated to include a majority baseline and revised logistic settings.",
+  "logistic_regression_convergence_warning": true
+}

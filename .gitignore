@@ -3,8 +3,12 @@
 __pycache__/
 *.py[cod]
 .venv/
+.venv-*/
 venv/
 env/
+.env
+.env.*
+!.env.example
 
 # Jupyter
 .ipynb_checkpoints/
@@ -16,11 +20,18 @@ data/processed/*
 # Generated experiments/results
 experiments/*
 results/*
+models/*
+*.joblib
+*.pkl
+*.pickle
+*.parquet
+*.arrow
+*.feather
 
 # OS files
 .DS_Store
 Thumbs.db
 
-#design decisions
+# Local decision notes
 docs/decisions.md
 
