@@ -12,12 +12,12 @@ EXTREME_RATE_FEATURES = (
     "SRC_TO_DST_SECOND_BYTES",
     "DST_TO_SRC_SECOND_BYTES",
 )
+PORT_FEATURES = ("L4_SRC_PORT", "L4_DST_PORT")
 
 # Exclusions for the first safe tree-model baseline. The rate fields are kept
 # in the source and should be revisited in an explicit comparison.
 INITIAL_EXCLUDED_FEATURES = (
     "FTP_COMMAND_RET_CODE",  # constant zero in the complete dataset audit
-    "L4_SRC_PORT",  # paper drops endpoint ports to reduce endpoint-specific bias
-    "L4_DST_PORT",
+    *PORT_FEATURES,  # conservative baseline choice; can be tested as a feature ablation
     *EXTREME_RATE_FEATURES,  # finite, but exceed float32 range
 )

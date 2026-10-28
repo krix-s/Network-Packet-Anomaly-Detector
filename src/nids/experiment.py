@@ -33,6 +33,7 @@ from .config import (
     EXTREME_RATE_FEATURES,
     INITIAL_EXCLUDED_FEATURES,
     MULTICLASS_TARGET,
+    PORT_FEATURES,
 )
 from .data import parquet_metadata
 from .features import feature_columns
@@ -124,6 +125,7 @@ def run_experiment(
     run_suffix: str = "",
     seed: int = SEED,
     log_rates: bool = False,
+    include_ports: bool = False,
 ) -> dict[str, Any]:
     if task not in {"binary", "multiclass"}:
         raise ValueError("task must be 'binary' or 'multiclass'")
@@ -132,6 +134,7 @@ def run_experiment(
     excluded = tuple(
         name for name in INITIAL_EXCLUDED_FEATURES
         if not (log_rates and name in EXTREME_RATE_FEATURES)
+        and not (include_ports and name in PORT_FEATURES)
     ) + (
         ("FLOW_DURATION_MILLISECONDS",) if drop_duration else ()
     )
@@ -253,6 +256,7 @@ def run_experiment(
         "split_rows": {"train": int(len(train)), "validation": int(len(validation)), "test": int(len(test))},
         "features": predictors,
         "excluded_features": list(excluded),
+        "include_ports": include_ports,
         "log1p_features": list(EXTREME_RATE_FEATURES if log_rates else ()),
         "validation_only": validation_only,
         "selection_metric": "attack_f1_population_weighted" if task == "binary" else "macro_f1_population_weighted",

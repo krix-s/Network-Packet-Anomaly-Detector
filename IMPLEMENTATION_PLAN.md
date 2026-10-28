@@ -28,6 +28,7 @@
 - [x] Read the user-supplied CNN paper and document its methodology and differences from the local 43-column dataset.
 - [x] Document actual sample-based metrics, limitations, model settings, and inference commands.
 - [x] Test a monotonic `log1p` transform for the extreme rate fields; the validation score was unchanged.
+- [x] Compare a validation-only with-ports variant; its HGB score was nearly unchanged.
 - [ ] Perform final verification and push the results/documentation update.
 
 Current seed-43 sample results and validation-only feature ablations are reported in `README.md` and `reports/experiments/`; generated models are ignored by Git.

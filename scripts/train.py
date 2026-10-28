@@ -27,6 +27,8 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--log-rates", action="store_true",
                         help="Include both extreme directional rate fields after log1p")
+    parser.add_argument("--include-ports", action="store_true",
+                        help="Keep source/destination ports in the predictor set")
     args = parser.parse_args()
 
     tasks = ("binary", "multiclass") if args.task == "all" else (args.task,)
@@ -43,6 +45,7 @@ def main() -> None:
             run_suffix=args.run_suffix,
             seed=args.seed,
             log_rates=args.log_rates,
+            include_ports=args.include_ports,
         )
         print(json.dumps(summary, indent=2))
 

@@ -69,7 +69,7 @@ The validation-only binary duration ablation selected the same HistGradientBoost
 
 The validation-only log1p rate-field experiment also selected HistGradientBoosting with attack F1 0.976589, unchanged from the baseline. This shows the fields can be represented and used by the pipeline without changing this validation score; it does not establish that their formulas are trustworthy or improve generalization. No test metrics were computed for this variant. See `reports/experiments/binary_rates_log1p_metrics.json`.
 
-The initial seed-42 run included source/destination ports; it is retained in Git history only. Current model artifacts omit those ports as a conservative leakage-control choice, not because the supplied CNN paper recommends it. The two rate fields are excluded from the current final models because their magnitudes exceed float32 range and their exact formulas remain unverified; the new log1p path is a separate validation-only experiment.
+The initial seed-42 run included source/destination ports; it is retained in Git history only. In the seed-43 validation-only port ablation, HGB attack F1 was 0.97638 with ports versus 0.97659 without; logistic F1 was 0.86245 versus 0.85292. The small HGB difference does not justify accepting possible endpoint-specific leakage, so the final artifacts continue to omit ports. The comparison did not evaluate test metrics; see `reports/experiments/binary_with_ports_metrics.json`. The two rate fields are excluded from the current final models because their magnitudes exceed float32 range and their exact formulas remain unverified; the log1p variant is a separate validation-only experiment.
 
 ## Pipeline decisions
 
