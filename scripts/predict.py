@@ -6,6 +6,8 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
 from nids.inference import load_artifact, predict_record
 
 

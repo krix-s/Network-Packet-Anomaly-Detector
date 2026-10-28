@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -151,7 +152,15 @@ def main() -> None:
         parser.error("Missing demo files: " + ", ".join(str(path) for path in missing))
     from nids.inference import load_artifact
 
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), DemoHandler)
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", args.port), DemoHandler)
+    except OSError as exc:
+        if exc.errno == errno.EADDRINUSE:
+            parser.error(
+                f"Port {args.port} is already in use. If FlowWatch is already running, open "
+                f"http://127.0.0.1:{args.port}; otherwise try --port {args.port + 1}."
+            )
+        raise
     server.artifacts = {
         "binary": load_artifact(ROOT / "models/binary_model.joblib"),
         "multiclass": load_artifact(ROOT / "models/multiclass_source_prior_model.joblib"),

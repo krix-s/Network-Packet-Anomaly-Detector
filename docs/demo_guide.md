@@ -21,6 +21,8 @@ PYTHONPATH=src .venv/bin/python scripts/train.py --task multiclass --training-we
 
 Stop the server with Ctrl+C. It binds to `127.0.0.1` so the demo is available only on the same computer.
 
+If startup says the port is already in use, FlowWatch may already be running; open the URL instead of starting a second copy. Otherwise stop the process using that port, or launch the demo on another local port with `.venv/bin/python scripts/demo_server.py --port 8001` and open `http://127.0.0.1:8001`.
+
 ## Three-minute walkthrough
 
 1. Start with the receipt analogy: each flow row is a short summary of a computer connection—its duration and traffic counts—not the message content.

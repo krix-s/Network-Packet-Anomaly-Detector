@@ -2,8 +2,12 @@
 """Reproduce the bounded-memory schema, quality, and target audit."""
 
 from collections import Counter
+from pathlib import Path
+import sys
 
 import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from nids.config import DEFAULT_DATA_PATH
 from nids.data import iter_parquet_batches, parquet_metadata
