@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f8fc">
+  <title>FlowWatch | Network Traffic Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #14233b;
+      --muted: #63718a;
+      --line: #e3eaf3;
+      --paper: #fff;
+      --wash: #f6f8fc;
+      --blue: #3459d5;
+      --blue-dark: #2745ad;
+      --teal: #0e8b78;
+      --orange: #c5731b;
+      --red: #c84454;
+      --shadow: 0 18px 50px rgba(26, 45, 79, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--wash);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar-inner, main, footer { width: min(1100px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar-inner { height: 68px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 760; letter-spacing: -.02em; }
+    .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; color: white; background: var(--blue); font-size: 18px; }
+    .local-badge { border: 1px solid #cfe8de; color: #176a59; background: #f0faf6; border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 700; }
+    main { padding: 38px 0 64px; }
+    .hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(250px, .75fr); gap: 26px; align-items: center; margin-bottom: 30px; }
+    .eyebrow { color: var(--blue); text-transform: uppercase; letter-spacing: .12em; font-weight: 800; font-size: 11px; }
+    h1 { font-size: clamp(32px, 4vw, 48px); line-height: 1.08; letter-spacing: -.045em; margin: 10px 0 15px; }
+    .hero p { color: var(--muted); font-size: 17px; max-width: 650px; margin: 0; }
+    .hero-aside { background: #edf2ff; color: #294487; border: 1px solid #dae4ff; border-radius: 17px; padding: 18px 19px; }
+    .hero-aside strong { display: block; margin-bottom: 5px; }
+    .hero-aside span { font-size: 13px; line-height: 1.45; display: block; color: #52668f; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; margin: 24px 0 30px; }
+    .metric { background: var(--paper); border: 1px solid var(--line); border-radius: 15px; padding: 16px 18px; box-shadow: 0 5px 20px rgba(26,45,79,.025); }
+    .metric-label { color: var(--muted); font-size: 12px; font-weight: 650; }
+    .metric-value { font-size: 25px; font-weight: 780; letter-spacing: -.04em; margin-top: 2px; }
+    .metric-note { color: #7a879b; font-size: 11px; margin-top: 2px; }
+    .section-head { display: flex; justify-content: space-between; gap: 18px; align-items: end; margin: 0 0 13px; }
+    h2 { font-size: 23px; letter-spacing: -.035em; margin: 0 0 3px; }
+    .sub { color: var(--muted); font-size: 14px; margin: 0; }
+    .demo-layout { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 18px; align-items: start; }
+    .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 21px; box-shadow: var(--shadow); }
+    .scenario-list { display: grid; gap: 10px; margin: 17px 0 16px; }
+    .scenario {
+      width: 100%; display: flex; align-items: flex-start; gap: 12px; text-align: left;
+      padding: 13px 14px; border: 1px solid var(--line); background: #fff; border-radius: 13px;
+      color: var(--ink); cursor: pointer; transition: border .15s, background .15s, transform .15s;
+      font: inherit;
+    }
+    .scenario:hover { border-color: #9eaff1; transform: translateY(-1px); }
+    .scenario[aria-pressed="true"] { border-color: var(--blue); background: #f3f6ff; box-shadow: 0 0 0 2px rgba(52,89,213,.08); }
+    .scenario-icon { width: 32px; height: 32px; flex: 0 0 32px; border-radius: 10px; display: grid; place-items: center; color: var(--blue-dark); background: #e9efff; font-size: 12px; font-weight: 800; }
+    .scenario strong { display: block; font-size: 14px; }
+    .scenario small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .flow-facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0 17px; }
+    .fact { background: #f3f6fa; color: #53627a; border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 700; }
+    .btn { border: 0; border-radius: 11px; padding: 12px 17px; font: inherit; font-size: 14px; font-weight: 750; cursor: pointer; }
+    .btn-primary { background: var(--blue); color: white; box-shadow: 0 7px 16px rgba(52,89,213,.2); }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn:disabled { opacity: .65; cursor: wait; }
+    .helper { color: #8390a3; font-size: 11px; margin: 10px 0 0; }
+    .empty { min-height: 380px; display: grid; place-items: center; text-align: center; color: var(--muted); padding: 25px; }
+    .empty-mark { width: 56px; height: 56px; display: grid; place-items: center; margin: 0 auto 13px; border-radius: 18px; background: #edf2ff; color: var(--blue); font-size: 24px; }
+    .result { display: none; }
+    .result.show { display: block; }
+    .empty.hidden { display: none; }
+    .result-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+    .result-kicker { font-size: 11px; color: var(--muted); font-weight: 750; text-transform: uppercase; letter-spacing: .1em; }
+    .result-title { font-size: 24px; line-height: 1.2; letter-spacing: -.035em; font-weight: 790; margin-top: 4px; }
+    .pill { border-radius: 999px; font-size: 12px; font-weight: 800; padding: 6px 10px; white-space: nowrap; }
+    .pill.attack { background: #fff0ec; color: #a64031; }
+    .pill.benign { background: #eaf8f1; color: #176a59; }
+    .pill.unknown { background: #fff6e9; color: #8d5a18; }
+    .two-results { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+    .mini-result { background: #f8faff; border: 1px solid #e5ebf8; border-radius: 12px; padding: 12px; }
+    .mini-label { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .mini-value { font-size: 16px; font-weight: 780; margin-top: 4px; }
+    .explanation { background: #f1f5ff; border-left: 3px solid var(--blue); padding: 12px 14px; border-radius: 0 10px 10px 0; color: #41557e; font-size: 13px; margin: 15px 0; }
+    .prob-title { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; font-weight: 750; margin: 16px 0 8px; }
+    .prob-row { display: grid; grid-template-columns: minmax(100px, 1.2fr) 2fr 42px; gap: 9px; align-items: center; margin: 8px 0; font-size: 11px; }
+    .prob-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #4b5a72; }
+    .track { height: 7px; background: #e9eef6; overflow: hidden; border-radius: 99px; }
+    .bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #5577e5, #788ff0); }
+    .prob-pct { text-align: right; color: #596980; font-variant-numeric: tabular-nums; }
+    .reference { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 13px; color: var(--muted); font-size: 11px; }
+    .reference strong { color: var(--ink); }
+    .callout { display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #fff8ed; border: 1px solid #f4e1bf; border-radius: 15px; padding: 15px 17px; margin-top: 18px; color: #72562f; }
+    .callout-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; color: #96651c; background: #ffedce; font-weight: 900; }
+    .callout strong { display: block; color: #694c22; font-size: 13px; }
+    .callout p { margin: 3px 0 0; font-size: 12px; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 31px; }
+    .step { padding: 17px; border: 1px solid var(--line); background: rgba(255,255,255,.7); border-radius: 15px; }
+    .step-num { color: var(--blue); font-size: 11px; font-weight: 850; letter-spacing: .08em; }
+    .step strong { display: block; margin: 6px 0 4px; font-size: 14px; }
+    .step p { font-size: 12px; color: var(--muted); margin: 0; }
+    footer { border-top: 1px solid var(--line); padding: 19px 0 27px; color: #8190a5; font-size: 11px; }
+    .error { color: #a33e47; font-size: 12px; margin-top: 12px; }
+    @media (max-width: 800px) {
+      .hero { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .demo-layout { grid-template-columns: 1fr; }
+      .empty { min-height: 170px; }
+    }
+    @media (max-width: 520px) {
+      .topbar-inner, main, footer { width: min(100% - 26px, 1100px); }
+      main { padding-top: 27px; }
+      .metrics { gap: 8px; }
+      .metric { padding: 12px; }
+      .metric-value { font-size: 21px; }
+      .panel { padding: 16px; }
+      .steps { grid-template-columns: 1fr; }
+      .two-results { grid-template-columns: 1fr; }
+      .section-head { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">↗</span><span>FlowWatch <span style="color:#8090a8;font-weight:600">/ class project</span></span></div>
+      <span class="local-badge">● Local demo</span>
+    </div>
+  </div>
+  <main>
+    <section class="hero" aria-labelledby="headline">
+      <div>
+        <div class="eyebrow">Network traffic, made understandable</div>
+        <h1 id="headline">Can a computer spot a suspicious connection?</h1>
+        <p>This project learns patterns from short summaries of network connections. Choose a recorded example and see how two models decide whether it looks like an attack and, if so, what kind.</p>
+      </div>
+      <aside class="hero-aside">
+        <strong>A simple way to think about it</strong>
+        <span>A flow is like a receipt for a conversation between computers: how long it lasted, how many bytes moved, and a few other technical details. The model reads that receipt, not the private message itself.</span>
+      </aside>
+    </section>
+
+    <section class="metrics" aria-label="Model test results">
+      <div class="metric"><div class="metric-label">Binary attack F1</div><div class="metric-value" id="m-binary-f1">—</div><div class="metric-note">Held-out sample · source-weighted</div></div>
+      <div class="metric"><div class="metric-label">Attack precision</div><div class="metric-value" id="m-precision">—</div><div class="metric-note">When flagged, how often it was an attack</div></div>
+      <div class="metric"><div class="metric-label">Attack recall</div><div class="metric-value" id="m-recall">—</div><div class="metric-note">Share of attacks found in the test sample</div></div>
+      <div class="metric"><div class="metric-label">Multiclass macro-F1</div><div class="metric-value" id="m-macro">—</div><div class="metric-note">Average across 15 attack categories</div></div>
+    </section>
+
+    <section aria-labelledby="demo-heading">
+      <div class="section-head">
+        <div><h2 id="demo-heading">Try the detector</h2><p class="sub">Pick one of the examples taken from the local dataset.</p></div>
+      </div>
+      <div class="demo-layout">
+        <div class="panel">
+          <div class="result-kicker">Step 1 · Pick a flow</div>
+          <div class="scenario-list" id="scenario-list" aria-label="Demo scenarios"></div>
+          <div class="flow-facts" id="flow-facts" aria-label="Flow summary"></div>
+          <button class="btn btn-primary" id="analyze" disabled>Analyze this example</button>
+          <p class="helper">The examples are recorded flows, not live network traffic. No traffic is captured or sent anywhere.</p>
+          <p class="error" id="error" role="alert"></p>
+        </div>
+        <div class="panel" aria-live="polite">
+          <div class="result-kicker">Step 2 · See the model’s answer</div>
+          <div class="empty" id="empty-state"><div><div class="empty-mark" aria-hidden="true">?</div><strong>Your result will appear here</strong><div style="font-size:12px;margin-top:4px">Choose an example, then select Analyze.</div></div></div>
+          <div class="result" id="result">
+            <div class="result-top"><div><div class="result-kicker">Binary screening</div><div class="result-title" id="binary-title"></div></div><span class="pill" id="binary-pill"></span></div>
+            <div class="two-results">
+              <div class="mini-result"><div class="mini-label">Attack type guess</div><div class="mini-value" id="multi-title"></div></div>
+              <div class="mini-result"><div class="mini-label">Model confidence estimate</div><div class="mini-value" id="confidence"></div></div>
+            </div>
+            <div class="explanation" id="explanation"></div>
+            <div class="prob-title"><span>Most likely categories</span><span>Model scores</span></div>
+            <div id="probabilities"></div>
+            <div class="reference" id="reference"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="callout">
+      <span class="callout-mark">!</span>
+      <div><strong>A good result still has limits</strong><p>The model is strongest on common patterns in this dataset. Rare SQL Injection examples remain difficult: it missed all 65 SQL Injection flows in the sampled test set. These scores do not guarantee safety on another network. The category scores are model confidence estimates, not calibrated probabilities.</p></div>
+    </aside>
+
+    <section class="steps" aria-label="How the project works">
+      <div class="step"><div class="step-num">01 · SUMMARIZE</div><strong>Turn traffic into flow records</strong><p>Each row describes a connection with counts and timing, rather than storing message contents.</p></div>
+      <div class="step"><div class="step-num">02 · LEARN</div><strong>Compare known examples</strong><p>Machine-learning models learn how benign and labeled attack flows differ in this dataset.</p></div>
+      <div class="step"><div class="step-num">03 · EXPLAIN</div><strong>Show a readable result</strong><p>The demo gives a benign-or-attack answer, a likely category, and a reminder that the model can be wrong.</p></div>
+    </section>
+  </main>
+  <footer>FlowWatch is an educational, offline demonstration of flow-based network anomaly detection. It is not a live monitoring or incident-response system.</footer>
+  <script>
+    const state = { examples: [], selected: null };
+    const $ = (id) => document.getElementById(id);
+    const pct = (value, digits = 1) => `${(100 * value).toFixed(digits)}%`;
+    const pretty = (label) => ({
+      'Benign': 'Benign', 'Bot': 'Bot activity', 'Brute Force -Web': 'Web brute force',
+      'Brute Force -XSS': 'Cross-site scripting (XSS)', 'DDOS attack-HOIC': 'DDoS traffic flood (HOIC)',
+      'DDOS attack-LOIC-UDP': 'DDoS traffic flood (LOIC-UDP)', 'DDoS attacks-LOIC-HTTP': 'DDoS traffic flood (LOIC-HTTP)',
+      'DoS attacks-GoldenEye': 'Denial-of-service (GoldenEye)', 'DoS attacks-Hulk': 'Denial-of-service (Hulk)',
+      'DoS attacks-SlowHTTPTest': 'Slow HTTP denial-of-service', 'DoS attacks-Slowloris': 'Slowloris denial-of-service',
+      'FTP-BruteForce': 'FTP password guessing', 'Infilteration': 'Infiltration', 'SQL Injection': 'SQL injection',
+      'SSH-Bruteforce': 'SSH password guessing'
+    })[label] || label;
+    function addText(parent, tag, text, className) {
+      const node = document.createElement(tag);
+      node.textContent = text;
+      if (className) node.className = className;
+      parent.appendChild(node);
+      return node;
+    }
+    async function loadInitial() {
+      const [examplesResponse, summaryResponse] = await Promise.all([fetch('/api/examples'), fetch('/api/summary')]);
+      if (!examplesResponse.ok || !summaryResponse.ok) throw new Error('The demo could not load its examples or score summary.');
+      state.examples = await examplesResponse.json();
+      const summary = await summaryResponse.json();
+      $('m-binary-f1').textContent = pct(summary.binary.attack_f1);
+      $('m-precision').textContent = pct(summary.binary.attack_precision);
+      $('m-recall').textContent = pct(summary.binary.attack_recall);
+      $('m-macro').textContent = pct(summary.multiclass.macro_f1);
+      drawExamples();
+    }
+    function drawExamples() {
+      const root = $('scenario-list');
+      root.replaceChildren();
+      state.examples.forEach((example, index) => {
+        const button = document.createElement('button');
+        button.type = 'button'; button.className = 'scenario';
+        button.setAttribute('aria-pressed', String(index === 0));
+        const icon = addText(button, 'span', String(index + 1).padStart(2, '0'), 'scenario-icon');
+        icon.setAttribute('aria-hidden', 'true');
+        const copy = document.createElement('span');
+        addText(copy, 'strong', example.title);
+        addText(copy, 'small', example.description);
+        button.appendChild(copy);
+        button.addEventListener('click', () => selectExample(example.id));
+        root.appendChild(button);
+      });
+      if (state.examples.length) selectExample(state.examples[0].id);
+    }
+    async function selectExample(id) {
+      state.selected = id;
+      document.querySelectorAll('.scenario').forEach((button, index) => button.setAttribute('aria-pressed', String(state.examples[index]?.id === id)));
+      $('analyze').disabled = false;
+      $('error').textContent = '';
+      const example = state.examples.find((item) => item.id === id);
+      const factsRoot = $('flow-facts'); factsRoot.replaceChildren();
+      try {
+        const response = await fetch(`/api/flow-summary?example_id=${encodeURIComponent(id)}`);
+        const flow = await response.json();
+        const duration = Number(flow.duration_ms || 0);
+        const packets = Number(flow.packets || 0);
+        const bytes = Number(flow.bytes || 0);
+        const durationText = duration >= 1000 ? `${(duration / 1000).toFixed(1)} sec` : `${Math.round(duration)} ms`;
+        const byteText = bytes >= 1_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${Math.round(bytes / 1000)} KB`;
+        addText(factsRoot, 'span', `Duration · ${durationText}`, 'fact');
+        addText(factsRoot, 'span', `Packets · ${Math.round(packets).toLocaleString()}`, 'fact');
+        addText(factsRoot, 'span', `Data moved · ${byteText}`, 'fact');
+      } catch (_) {
+        addText(factsRoot, 'span', 'Flow summary is ready', 'fact');
+      }
+      $('analyze').dataset.title = example.title;
+    }
+    function showResult(data) {
+      $('empty-state').classList.add('hidden');
+      $('result').classList.add('show');
+      const isAttack = Number(data.binary.prediction) === 1;
+      const isCorrect = String(data.reference.known_attack) === String(data.multiclass.prediction);
+      $('binary-title').textContent = isAttack ? 'Possible attack pattern' : 'Looks benign to this model';
+      const pill = $('binary-pill');
+      pill.textContent = isAttack ? 'Flagged for review' : 'No attack flag';
+      pill.className = `pill ${isAttack ? 'attack' : 'benign'}`;
+      $('multi-title').textContent = pretty(data.multiclass.prediction);
+      $('confidence').textContent = pct(data.multiclass.confidence);
+      $('explanation').textContent = isAttack
+        ? `The screening model found a pattern that resembles an attack. A human analyst would investigate before taking action. The category model’s leading guess is ${pretty(data.multiclass.prediction)}.`
+        : 'The screening model did not find a strong attack pattern in this recorded flow. This is a model estimate, not proof that a connection is safe.';
+      const root = $('probabilities'); root.replaceChildren();
+      data.top_categories.forEach((item) => {
+        const row = document.createElement('div'); row.className = 'prob-row';
+        addText(row, 'span', pretty(item.name), 'prob-name');
+        const track = document.createElement('div'); track.className = 'track';
+        const bar = document.createElement('div'); bar.className = 'bar'; bar.style.width = `${Math.max(0, Math.min(100, item.probability * 100))}%`;
+        track.appendChild(bar); row.appendChild(track);
+        addText(row, 'span', pct(item.probability), 'prob-pct');
+        root.appendChild(row);
+      });
+      $('reference').replaceChildren();
+      const known = document.createElement('span');
+      known.append('Dataset reference label: ');
+      const knownStrong = document.createElement('strong'); knownStrong.textContent = pretty(data.reference.known_attack); known.appendChild(knownStrong);
+      known.append(` · Category guess ${isCorrect ? 'matches' : 'does not match'} this recorded label.`);
+      $('reference').appendChild(known);
+    }
+    $('analyze').addEventListener('click', async () => {
+      if (!state.selected) return;
+      const button = $('analyze'); button.disabled = true; button.textContent = 'Analyzing…'; $('error').textContent = '';
+      try {
+        const response = await fetch('/api/predict', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({example_id: state.selected}) });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Analysis failed.');
+        showResult(result);
+      } catch (error) {
+        $('error').textContent = error.message || 'Could not connect to the local demo server.';
+      } finally {
+        button.disabled = false; button.textContent = 'Analyze this example';
+      }
+    });
+    loadInitial().catch((error) => { $('error').textContent = error.message || 'Demo could not start.'; });
+  </script>
+</body>
+</html>

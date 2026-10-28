@@ -31,6 +31,8 @@
 - [x] Compare a validation-only with-ports variant; its HGB score was nearly unchanged.
 - [x] Compare multiclass balanced and source-prior training weights on the same validation split, then evaluate the validation-selected source-prior model on the held-out sample.
 - [x] Record multiclass per-class validation diagnostics, held-out metrics, presentation brief, and weighting caveats.
+- [x] Add a local, no-extra-dependency browser demo with plain-language flow explanations and curated dataset examples.
+- [x] Add a layman-facing demo guide and run checks against the local demo API.
 - [x] Perform final verification and push the results/documentation update.
 
 Current seed-43 sample results and validation-only feature ablations are reported in `README.md` and `reports/experiments/`; generated models are ignored by Git. Multiclass has both balanced and source-prior reports; the latter was selected using validation macro-F1 and reaches 0.7887 source-weighted test macro-F1, while missing all 65 sampled SQL Injection test examples.

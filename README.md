@@ -8,6 +8,14 @@ Repository audit, bounded-memory dataset validation, sampled training, held-out 
 
 The binary classification results and validation experiments are summarized in the [binary experiment brief](reports/experiments/binary_presentation_brief.md). The multiclass follow-up comparing balanced and source-prior training is documented in the [multiclass experiment brief](reports/experiments/multiclass_presentation_brief.md).
 
+For a nontechnical, interactive presentation, launch the local [FlowWatch demo](docs/demo_guide.md):
+
+```bash
+.venv/bin/python scripts/demo_server.py
+```
+
+Then open http://127.0.0.1:8000. The page uses recorded examples from the local dataset; it does not capture live traffic.
+
 ## Dataset setup
 
 Place the dataset at `data/raw/NF-CSE-CIC-IDS2018-V2.parquet`. The feature dictionary can be placed beside it as `data/raw/NetFlow v2 Features.csv`. Neither file should be committed. The current local dataset has 17,129,715 rows and 43 columns.
