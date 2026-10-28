@@ -6,6 +6,8 @@ An undergraduate project to detect malicious network flows with the NF-CSE-CIC-I
 
 Repository audit, bounded-memory dataset validation, sampled training, held-out evaluation, and local inference are implemented. The measured sample-based results are summarized below; they are not full-data training results. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [docs/data-audit.md](docs/data-audit.md), [docs/research_basis.md](docs/research_basis.md), and [docs/architecture.md](docs/architecture.md).
 
+The binary classification results and validation experiments are ready to present: [binary experiment brief](reports/experiments/binary_presentation_brief.md). Multiclass work is a separate follow-on.
+
 ## Dataset setup
 
 Place the dataset at `data/raw/NF-CSE-CIC-IDS2018-V2.parquet`. The feature dictionary can be placed beside it as `data/raw/NetFlow v2 Features.csv`. Neither file should be committed. The current local dataset has 17,129,715 rows and 43 columns.
