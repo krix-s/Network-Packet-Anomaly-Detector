@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Live Traffic Signal Lab</title>
+<style>
+:root{--ink:#182638;--muted:#68778b;--bg:#f3f6f8;--card:#fff;--blue:#1776b6;--orange:#e18b27;--red:#d44242;--green:#16876b;--line:#dde5eb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:1060px;margin:auto;padding:28px 20px 48px}h1{font-size:2rem;margin:0}.sub{color:var(--muted);max-width:780px}.pill{display:inline-block;border-radius:999px;padding:3px 12px;background:#e4f0f6;color:#185e83;font-size:.85rem;font-weight:700;margin:12px 0}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.card,.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 3px 10px #132b3d0b}.label{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.value{font-size:1.6rem;font-weight:700;margin-top:4px}.panel{margin:14px 0}.panel h2{font-size:1.05rem;margin:0 0 8px}.chart{width:100%;height:250px;display:block}.legend{display:flex;gap:18px;color:var(--muted);font-size:.86rem}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}.blue{background:var(--blue)}.orange{background:var(--orange)}.red{background:var(--red)}.status{font-weight:700}.alert{color:var(--red)}.ok{color:var(--green)}.note{border-left:4px solid var(--orange);padding:10px 14px;background:#fff9ed;color:#624718;border-radius:4px}.foot{color:var(--muted);font-size:.88rem;margin-top:18px}@media(max-width:700px){.cards{grid-template-columns:repeat(2,1fr)}h1{font-size:1.6rem}}
+</style>
+</head>
+<body><main class="wrap">
+<div class="pill">LOCAL EXTENSION · SIGNALS AND SYSTEMS</div>
+<h1>Packet Traffic Signal Lab</h1>
+<p class="sub">A separate experiment that turns packet arrivals into one-second signals, smooths them causally, and uses a 1D CNN autoencoder to flag windows that differ from a baseline.</p>
+<div class="cards">
+ <section class="card"><div class="label">Mode</div><div class="value" id="mode">Starting</div></section>
+ <section class="card"><div class="label">Current packets / second</div><div class="value" id="pps">—</div></section>
+ <section class="card"><div class="label">CNN reconstruction error</div><div class="value" id="score">—</div></section>
+ <section class="card"><div class="label">Current result</div><div class="value status" id="result">Warming up</div></section>
+</div>
+<section class="panel"><h2>Time-domain signal and low-pass estimate</h2><div class="legend"><span><i class="dot blue"></i>Packets per second</span><span><i class="dot orange"></i>Causal EWMA low-pass</span></div><canvas id="signal" class="chart"></canvas></section>
+<section class="panel"><h2>CNN anomaly score</h2><div class="legend"><span><i class="dot red"></i>Reconstruction error</span><span><i class="dot orange"></i>Baseline threshold</span></div><canvas id="scoreChart" class="chart"></canvas></section>
+<section class="panel"><h2>What the processing means</h2><p>Each one-second bin produces packet count, total bytes, and mean packet inter-arrival time. The pipeline applies <code>log1p</code> for dynamic-range compression, then a causal EWMA low-pass filter. The difference between the compressed signal and its smoothed value is the high-frequency residual. The CNN reconstructs windows of the smoothed signal plus residual; a large reconstruction error means “unusual compared with this baseline.”</p><p class="note"><strong>Interpretation:</strong> this is an anomaly score, not an attack label. Simulation mode uses generated traffic patterns. Live mode learns a baseline from the selected interface; capture results are not validated attack-detection accuracy.</p><p id="simMetrics" class="foot"></p></section>
+<p class="foot" id="message">Waiting for the local monitor…</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);let lastState=null;
+function draw(id,series,keys,colors,threshold=null){const c=$(id),ctx=c.getContext('2d'),dpr=window.devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);ctx.strokeStyle='#e4eaf0';ctx.lineWidth=1;for(let i=0;i<5;i++){const y=15+i*(h-35)/4;ctx.beginPath();ctx.moveTo(42,y);ctx.lineTo(w-10,y);ctx.stroke()}ctx.fillStyle='#738196';ctx.font='12px system-ui';ctx.fillText('recent seconds →',w-110,h-4);let vals=[];for(const p of series){for(const k of keys)if(Number.isFinite(p[k]))vals.push(p[k])}if(threshold!==null)vals.push(threshold);let ymax=Math.max(1,...vals)*1.08;const X=i=>42+i*(w-54)/Math.max(series.length-1,1),Y=v=>h-25-(v/ymax)*(h-48);keys.forEach((k,j)=>{ctx.strokeStyle=colors[j];ctx.lineWidth=2;ctx.beginPath();series.forEach((p,i)=>{const v=Number(p[k]||0);i?ctx.lineTo(X(i),Y(v)):ctx.moveTo(X(i),Y(v))});ctx.stroke()});if(threshold!==null){ctx.strokeStyle='#e18b27';ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(42,Y(threshold));ctx.lineTo(w-10,Y(threshold));ctx.stroke();ctx.setLineDash([])}}
+async function refresh(){try{const s=await(await fetch('/api/state',{cache:'no-store'})).json();lastState=s;$('mode').textContent=s.mode||s.phase;$('message').textContent=(s.progress?s.progress+' · ':'')+(s.message||'');const t=s.latest||{};$('pps').textContent=t.pps===undefined?'—':Number(t.pps).toFixed(0);$('score').textContent=t.score===undefined?'—':Number(t.score).toFixed(4);const r=$('result');r.textContent=s.phase==='baseline'?'Calibrating':s.phase==='calibration'?'Training CNN':t.alert?'Unusual window':'Baseline-like';r.className='value status '+(t.alert?'alert':'ok');const m=s.simulation_metrics;$('simMetrics').textContent=m?`Generated-trace check only — precision ${m.precision.toFixed(3)}, recall ${m.recall.toFixed(3)}. Not a real-traffic performance estimate.`:'';const tr=s.trace||[];draw('signal',tr,['pps','smooth'],['#1776b6','#e18b27']);draw('scoreChart',tr,['score'],['#d44242'],s.threshold??null)}catch(e){$('message').textContent='Cannot reach the local monitor.'}}
+setInterval(refresh,800);window.addEventListener('resize',refresh);refresh();
+</script></body></html>

@@ -24,8 +24,13 @@ The notebooks are the deeper technical explanation behind the demo:
 
 1. [`01_dataset_eda.ipynb`](notebooks/01_dataset_eda.ipynb) inspects the local Parquet dataset in batches, checks label consistency and data quality, and plots the highly imbalanced attack categories with Seaborn.
 2. [`02_model_experiments.ipynb`](notebooks/02_model_experiments.ipynb) explains the sampling and feature decisions, binary and multiclass tasks, model comparison, class weighting, metrics, ablations, and limitations.
+3. [`03_cnn_and_live_signals.ipynb`](notebooks/03_cnn_and_live_signals.ipynb) compares a feature-axis CNN and explains the separate temporal packet-signal demo.
 
 The 642 MB Parquet dataset and trained model files are not included. To run the EDA cells, place `NF-CSE-CIC-IDS2018-V2.parquet` in `data/raw/` and install `pyarrow`, `numpy`, `matplotlib`, and `seaborn`. The model-experiments notebook reads published results from the demo bundle and explains them; it does not retrain models.
+
+## Local packet-signal demo
+
+The separate [Packet Traffic Signal Lab](live_traffic_demo/README.md) demonstrates packet-rate time series, a causal low-pass filter, a high-frequency residual, and a 1D CNN autoencoder. Start with its simulation mode, which needs no capture privileges. Its optional live mode reads packet timestamps and lengths from an authorized local interface, learns a short baseline, and reports unusual windows. That score is not an attack label or validated detection accuracy. The original hosted website remains a static presentation demo.
 
 ## What was evaluated
 

@@ -1,0 +1,90 @@
+{
+  "seed": 43,
+  "task": "binary attack detection",
+  "sample_rows": 142000,
+  "sample_class_counts": {
+    "0": 125000,
+    "1": 17000
+  },
+  "source_class_counts": {
+    "0": 15101685,
+    "1": 2028030
+  },
+  "split_rows": {
+    "train": 99400,
+    "validation": 21300,
+    "test_reserved": 21300
+  },
+  "validation_attack_f1": {
+    "majority_baseline": 0.0,
+    "logistic_regression": 0.8529157635174072,
+    "histogram_gradient_boosting": 0.9765891995292924,
+    "conv1d_flow_features": 0.9348623297043824
+  },
+  "cnn_best_epoch": 12,
+  "cnn_history": [
+    {
+      "epoch": 1,
+      "training_loss": 0.5189737479905693,
+      "validation_attack_f1": 0.5230393950583653
+    },
+    {
+      "epoch": 2,
+      "training_loss": 0.3078682486500059,
+      "validation_attack_f1": 0.8094267777339144
+    },
+    {
+      "epoch": 3,
+      "training_loss": 0.22423957379496828,
+      "validation_attack_f1": 0.9036553518689507
+    },
+    {
+      "epoch": 4,
+      "training_loss": 0.2079926145320036,
+      "validation_attack_f1": 0.9107627068482369
+    },
+    {
+      "epoch": 5,
+      "training_loss": 0.19158689654907402,
+      "validation_attack_f1": 0.9293749593994791
+    },
+    {
+      "epoch": 6,
+      "training_loss": 0.18250693506276122,
+      "validation_attack_f1": 0.8355639758262811
+    },
+    {
+      "epoch": 7,
+      "training_loss": 0.1870056553458681,
+      "validation_attack_f1": 0.8819554439303322
+    },
+    {
+      "epoch": 8,
+      "training_loss": 0.1826612583684678,
+      "validation_attack_f1": 0.8909528712830076
+    },
+    {
+      "epoch": 9,
+      "training_loss": 0.17350857218309323,
+      "validation_attack_f1": 0.9255724246015677
+    },
+    {
+      "epoch": 10,
+      "training_loss": 0.16633318121335944,
+      "validation_attack_f1": 0.8916381958153987
+    },
+    {
+      "epoch": 11,
+      "training_loss": 0.1632747488210396,
+      "validation_attack_f1": 0.9060723682801348
+    },
+    {
+      "epoch": 12,
+      "training_loss": 0.16141382277924188,
+      "validation_attack_f1": 0.9348623297043824
+    }
+  ],
+  "cnn_architecture": "Conv1d(1,16,k=3) -> Conv1d(16,32,k=3) -> global average pool -> 2 logits",
+  "cnn_input_note": "The CNN applies filters to the fixed feature-column order, not to time. The columns are heterogeneous flow statistics.",
+  "evaluation_note": "Validation-only comparison; the test partition was reserved and not scored for this CNN extension."
+}
