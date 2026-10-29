@@ -18,6 +18,15 @@ Then open <http://127.0.0.1:8000>. If that port is already in use, open the exis
 
 GitHub Pages must be set to **GitHub Actions** as its publishing source for the hosted link to work. The workflow publishes only the demo page and its precomputed results.
 
+## Technical walkthroughs
+
+The notebooks are the deeper technical explanation behind the demo:
+
+1. [`01_dataset_eda.ipynb`](notebooks/01_dataset_eda.ipynb) inspects the local Parquet dataset in batches, checks label consistency and data quality, and plots the highly imbalanced attack categories with Seaborn.
+2. [`02_model_experiments.ipynb`](notebooks/02_model_experiments.ipynb) explains the sampling and feature decisions, binary and multiclass tasks, model comparison, class weighting, metrics, ablations, and limitations.
+
+The 642 MB Parquet dataset and trained model files are not included. To run the EDA cells, place `NF-CSE-CIC-IDS2018-V2.parquet` in `data/raw/` and install `pyarrow`, `numpy`, `matplotlib`, and `seaborn`. The model-experiments notebook reads published results from the demo bundle and explains them; it does not retrain models.
+
 ## What was evaluated
 
 The local dataset contains 17.1 million flow records and 43 columns: 41 numeric features plus binary `Label` and multiclass `Attack` targets. The models were trained and evaluated on bounded, stratified samples, not on all rows.
